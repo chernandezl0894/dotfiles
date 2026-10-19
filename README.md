@@ -33,7 +33,7 @@ PHP is intentionally excluded. It is handled in a different editor.
 - A [Nerd Font](https://www.nerdfonts.com/) is recommended. The Alacritty and i3 configs use `JetBrainsMonoNLNerdFont`, which is not installed by the bootstrap script.
 
 > [!WARNING]
-> The bootstrap script runs the distribution package manager (`apt-get`, `dnf`, or `pacman`), downloads toolchains, and replaces dotfile symlinks. Review it before running, especially on an existing machine. The `install` helper removes existing targets before creating symlinks.
+> The bootstrap script runs the distribution package manager (`apt-get`, `dnf`, or `pacman`), downloads toolchains, and replaces dotfile symlinks. Review it before running, especially on an existing machine: linking removes existing targets before creating symlinks.
 
 ## Usage
 
@@ -57,7 +57,7 @@ Open a new shell after the bootstrap finishes so the updated `PATH` is used.
 | Option | Description |
 | --- | --- |
 | `--skip-mason` | Install Neovim plugins but skip Mason-managed LSPs, formatters, and debug adapters. |
-| `--skip-dotfiles` | Do not run `./install`; assume the configuration is already linked. |
+| `--skip-dotfiles` | Do not link the dotfiles; assume the configuration is already linked. |
 | `--skip-tmux-plugins` | Do not clone TPM or install tmux plugins. |
 | `--nvim-version VER` | Install a specific Neovim version. Default: `0.10.4`. |
 | `--dry-run` | Print the actions without changing the system. |
@@ -69,15 +69,15 @@ Environment overrides:
 NVIM_VERSION=0.10.4 GO_VERSION=1.27.2 ZIG_VERSION=0.16.0 ODIN_TAG=dev-2026-10 ./bootstrap.sh
 ```
 
-### Link configuration only
+### Re-link configuration
 
-If the tools are already installed and you only want to update the symlinks:
+The bootstrap script is idempotent and always (re)creates the configuration symlinks unless `--skip-dotfiles` is passed. To refresh the symlinks with the heavier steps skipped:
 
 ```bash
-./install
+./bootstrap.sh --skip-mason --skip-tmux-plugins
 ```
 
-The installer links Neovim, tmux, Alacritty, i3, and i3status into `~/.config`.
+It links Neovim, tmux, Alacritty, i3, and i3status into `~/.config`, replacing existing targets.
 
 ## Packages and libraries
 
@@ -359,7 +359,6 @@ i3bar runs `i3status` at the top with a battery module (refreshed every 5 second
 ```text
 .
 ├── bootstrap.sh       # Debian/Ubuntu, Fedora, and Arch provisioning script
-├── install            # Symlink helper for configuration files
 ├── nvim/              # Neovim configuration and lazy-lock.json
 ├── tmux/              # tmux configuration
 ├── alacritty/         # Alacritty configuration and themes

@@ -10,7 +10,7 @@
 #
 # Options:
 #   --skip-mason          Do not install Mason packages
-#   --skip-dotfiles       Do not run ./install (assume config is already linked)
+#   --skip-dotfiles       Do not link dotfiles (assume config is already linked)
 #   --skip-tmux-plugins   Do not install TPM plugins
 #   --nvim-version VER    Neovim version to install (default: 0.10.4)
 #   --dry-run             Print what would be done without changing anything
@@ -431,6 +431,19 @@ install_neovim() {
 # Dotfiles and tmux plugins
 # ---------------------------------------------------------------------------
 
+# Each managed path mirrors the repository layout under ~/.config, e.g.
+# tmux/tmux.conf -> ~/.config/tmux/tmux.conf.
+link_file() {
+  local source_file="$1"
+  local target_file="$2"
+
+  run mkdir -p "$(dirname "$target_file")"
+  if [ -e "$target_file" ] || [ -L "$target_file" ]; then
+    run rm -rf "$target_file"
+  fi
+  run ln -sfn "$source_file" "$target_file"
+}
+
 link_dotfiles() {
   if [ "$SKIP_DOTFILES" -eq 1 ]; then
     log "Skipping dotfile symlinks (--skip-dotfiles)"
@@ -438,8 +451,21 @@ link_dotfiles() {
   fi
 
   log "Linking dotfiles"
-  [ -x "$DOTFILES_DIR/install" ] || die "$DOTFILES_DIR/install is not executable"
-  run "$DOTFILES_DIR/install"
+  local relative
+  for relative in \
+    tmux/tmux.conf \
+    nvim \
+    alacritty/alacritty.toml \
+    alacritty/themes/catppuccin-frappe.toml \
+    alacritty/themes/catppuccin-mocha.toml \
+    alacritty/themes/catppuccin-latte.toml \
+    alacritty/themes/dreamsof.toml \
+    alacritty/themes/sweetie_light.toml \
+    alacritty/themes/sweetie_dark.toml \
+    i3/config \
+    i3status/config; do
+    link_file "$DOTFILES_DIR/$relative" "$HOME/.config/$relative"
+  done
 }
 
 install_tmux_plugins() {
