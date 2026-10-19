@@ -187,17 +187,96 @@ The leader key is `Space`.
 - Mouse support, 10,000-line history, and Vim-style copy mode.
 - Vim-style pane navigation with `h`, `j`, `k`, `l` and arrow keys.
 - Intuitive splits with `|` and `-`, opened in the current directory.
+- Windows and panes are numbered from `1` (`base-index 1`).
 - Plugins: `tpm`, `tmux-sensible`, `vim-tmux-navigator`, `tmux-yank`, `tmux-resurrect`, and `tmux-continuum`.
 
-Useful commands:
+#### Session persistence
+
+tmux keeps sessions alive while the machine is on. To survive a reboot, `tmux-resurrect`
+saves the environment and `tmux-continuum` restores it automatically:
+
+- The environment (sessions, windows, panes, layouts, working directories, and pane
+  contents) is autosaved every 15 minutes to `~/.local/share/tmux/resurrect/`.
+- On server start, the last saved environment is restored (`@continuum-restore 'on'`),
+  so you come back to your last session by default.
+- A `systemd --user` unit at `~/.config/systemd/user/tmux.service` starts the tmux
+  server at login and saves the environment when it stops (`@continuum-boot 'on'`).
+- After logging in, open a terminal and run `tmux a` to land in the restored session.
+  To attach automatically, add this to your shell rc file (not managed by this repo):
+  `[ -z "$TMUX" ] && { tmux attach 2>/dev/null || tmux new -s main; }`.
+- Manual control: `prefix + C-s` saves now, `prefix + C-r` restores now.
+- Only a conservative program list is relaunched (`vim`, `nvim`, `htop`, `less`, `man`,
+  `top`, ...); everything else comes back as a shell in the right directory. Add more
+  with `set -g @resurrect-processes 'ssh make python'`.
+- Manage the service with `systemctl --user status|stop|disable tmux.service`. To turn
+  off auto-start, also set `@continuum-boot 'off'` in `tmux/tmux.conf`.
+
+#### Cheatsheet
+
+Everything inside tmux starts with the prefix `C-a` (`Ctrl+a`); release it and press the key.
+
+From a regular shell (outside tmux):
 
 ```bash
-# Inside tmux: install/update plugins
-prefix + I
-
-# Reload tmux config
-prefix + r
+tmux                       # create a new session and attach to it
+tmux new -s work           # create a named session "work"
+tmux ls                    # list sessions
+tmux attach -t work        # attach to the session "work" (alias: tmux a -t work)
+tmux a                     # attach to the most recently used session (where you left off)
+tmux kill-session -t work  # kill one session
+tmux kill-server           # kill the server and every session
 ```
+
+General:
+
+| Keys | Action |
+| --- | --- |
+| `prefix d` | Detach (leave everything running in the background). |
+| `prefix s` | List and switch between sessions. |
+| `prefix $` | Rename the current session. |
+| `prefix (` / `prefix )` | Previous / next session. |
+| `prefix :` | Command prompt, e.g. `:new-session -s work` or `:kill-session`. |
+| `prefix ?` | List every key binding. |
+| `prefix r` | Reload `tmux.conf`. |
+| `prefix I` / `prefix U` | Install / update TPM plugins. |
+| `prefix C-s` / `prefix C-r` | Save / restore the session environment now. |
+| Mouse | Click to select panes/windows, drag borders to resize, scroll to enter copy mode. |
+
+Windows:
+
+| Keys | Action |
+| --- | --- |
+| `prefix c` | New window (in the current directory). |
+| `prefix ,` | Rename the current window. |
+| `prefix n` / `prefix p` | Next / previous window. |
+| `prefix 1` … `prefix 9` | Jump to window by number. |
+| `prefix w` | List and switch between windows. |
+| `prefix &` | Close the current window. |
+| `prefix S-Left` / `prefix S-Right` | Previous / next window. |
+
+Panes:
+
+| Keys | Action |
+| --- | --- |
+| `prefix \|` | Split vertically (side by side). |
+| `prefix -` | Split horizontally (stacked). |
+| `prefix h` / `j` / `k` / `l` | Move left / down / up / right between panes. |
+| `prefix z` | Zoom (maximize) the current pane; press again to restore. |
+| `prefix o` | Cycle to the next pane. |
+| `prefix q` | Show pane numbers. |
+| `prefix x` | Close the current pane. |
+| `prefix {` / `prefix }` | Move the pane left / right. |
+| `prefix Space` | Cycle through pane layouts. |
+
+Copy mode (Vim keys):
+
+| Keys | Action |
+| --- | --- |
+| `prefix [` | Enter copy mode. |
+| `v` | Start selection. |
+| `C-v` | Toggle rectangular selection. |
+| `y` | Copy selection to the system clipboard (`tmux-yank`). |
+| `q` / `Esc` | Leave copy mode. |
 
 ### Alacritty and i3
 
