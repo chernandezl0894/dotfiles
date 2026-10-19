@@ -285,6 +285,73 @@ The bootstrap script links the Alacritty and i3 configurations but does not inst
 - **Alacritty**: Sweetie Light theme, JetBrainsMonoNL Nerd Font, 160x80 initial window, clipboard shortcuts, and 100,000-line scrollback.
 - **i3**: `Mod4` as the modifier key, dmenu launcher, standard workspace bindings, and i3status with battery information.
 
+#### i3 cheatsheet
+
+`Mod` is `Mod4` (the Super/Windows key). Bindings follow the Vim-style layout:
+`j`/`k`/`l`/`;` mean left/down/up/right.
+
+Applications and session:
+
+| Keys | Action |
+| --- | --- |
+| `Mod+Return` | Open a terminal (`i3-sensible-terminal`). |
+| `Mod+d` | Open the `dmenu_run` launcher. |
+| `Mod+Shift+q` | Kill the focused window. |
+| `Mod+Shift+c` | Reload the i3 configuration. |
+| `Mod+Shift+r` | Restart i3 in place (keeps layout/session). |
+| `Mod+Shift+e` | Exit i3 / log out (asks for confirmation). |
+| `Mod+r` | Enter resize mode (see below). |
+| Mouse + `Mod` | Drag floating windows to move them. |
+
+Focus and move:
+
+| Keys | Action |
+| --- | --- |
+| `Mod+j` / `Mod+k` / `Mod+l` / `Mod+;` | Focus left / down / up / right. |
+| `Mod+Left` / `Down` / `Up` / `Right` | Same, with the arrow keys. |
+| `Mod+Shift+j` / `k` / `l` / `;` | Move the focused window left / down / up / right. |
+| `Mod+Shift+Arrow` | Same, with the arrow keys. |
+| `Mod+a` | Focus the parent container. |
+
+Layout:
+
+| Keys | Action |
+| --- | --- |
+| `Mod+h` | Split horizontally (side by side). |
+| `Mod+v` | Split vertically (stacked). |
+| `Mod+f` | Toggle fullscreen. |
+| `Mod+s` | Stacking layout. |
+| `Mod+w` | Tabbed layout. |
+| `Mod+e` | Toggle split layout. |
+| `Mod+Shift+space` | Toggle tiling / floating. |
+| `Mod+space` | Move focus between tiling and floating windows. |
+
+Workspaces:
+
+| Keys | Action |
+| --- | --- |
+| `Mod+1` … `Mod+0` | Switch to workspace 1–10. |
+| `Mod+Shift+1` … `Mod+Shift+0` | Move the focused window to workspace 1–10. |
+
+Resize mode (press `Mod+r` first, then):
+
+| Keys | Action |
+| --- | --- |
+| `j` / `;` | Shrink / grow width. |
+| `k` / `l` | Grow / shrink height. |
+| `Arrow` keys | Same as above. |
+| `Return` / `Escape` / `Mod+r` | Return to the default mode. |
+
+Media keys:
+
+| Keys | Action |
+| --- | --- |
+| `XF86AudioRaiseVolume` / `LowerVolume` | Volume up / down by 10% (`pactl`). |
+| `XF86AudioMute` | Mute / unmute the default sink. |
+| `XF86AudioMicMute` | Mute / unmute the default source. |
+
+i3bar runs `i3status` at the top with a battery module (refreshed every 5 seconds).
+
 ## Repository layout
 
 ```text
