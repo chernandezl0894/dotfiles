@@ -9,8 +9,10 @@ create_symlink() {
     local source_file=$1
     local target_file=$2
 
-    if [ -e "$target_file" ]; then
-        rm -rf $target_file
+    mkdir -p "$(dirname "$target_file")"
+
+    if [ -e "$target_file" ] || [ -L "$target_file" ]; then
+        rm -rf "$target_file"
     fi
 
     ln -sf "$source_file" "$target_file"
