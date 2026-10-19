@@ -1,5 +1,14 @@
 local is_nvim_11 = vim.fn.has("nvim-0.11") == 1
 
+-- Find the virtual environment used by a Python project.
+local function find_venv(root_dir)
+  for _, name in ipairs({ ".venv", "venv", ".virtualenv" }) do
+    if vim.fn.isdirectory(root_dir .. "/" .. name) == 1 then
+      return root_dir, name
+    end
+  end
+end
+
 return {
   'neovim/nvim-lspconfig',
   version = is_nvim_11 and nil or 'v2.*',
@@ -41,13 +50,14 @@ return {
         'cssls',
         'tailwindcss',
         'emmet_ls',
-        'phpactor',
         'pyright',
         'rust_analyzer',
         'gopls',
         'ols',
+        'zls',
         'clangd',
         'ts_ls',
+        'ruff',
       },
       automatic_installation = false,
       automatic_enable = is_nvim_11 or false,
@@ -63,17 +73,6 @@ return {
           telemetry = { enable = false },
           workspace = { checkThirdParty = false },
         },
-      },
-    })
-
-    lsp.phpactor.setup({
-      capabilities = capabilities,
-      cmd = { 'phpactor', 'language-server' },
-      filetypes = { 'php', 'blade' },
-      root_dir = require("lspconfig").util.root_pattern('composer.json', '.git'),
-      init_options = {
-        ['language_server_phpstan.enabled'] = false,
-        ['language_server_psalm.enabled'] = false,
       },
     })
 
@@ -93,10 +92,36 @@ return {
     lsp.emmet_ls.setup({
       on_attach = on_attach,
       capabilities = capabilities,
-      filetypes = { "html", "php", "blade" },
+      filetypes = { "html" },
     })
 
     lsp.pyright.setup({
+      on_attach = on_attach,
+      capabilities = capabilities,
+      on_new_config = function(new_config, new_root_dir)
+        local venv_root, venv_name = find_venv(new_root_dir)
+        if not venv_root then
+          return
+        end
+
+        new_config.settings = new_config.settings or {}
+        new_config.settings.python = new_config.settings.python or {}
+        new_config.settings.python.venvPath = venv_root
+        new_config.settings.python.venv = venv_name
+      end,
+      settings = {
+        python = {
+          analysis = {
+            autoSearchPaths = true,
+            useLibraryCodeForTypes = true,
+            -- Ruff owns import organization.
+            disableOrganizeImports = true,
+          },
+        },
+      },
+    })
+
+    lsp.ruff.setup({
       on_attach = on_attach,
       capabilities = capabilities,
     })
@@ -117,6 +142,11 @@ return {
     })
 
     lsp.ols.setup({
+      on_attach = on_attach,
+      capabilities = capabilities,
+    })
+
+    lsp.zls.setup({
       on_attach = on_attach,
       capabilities = capabilities,
     })

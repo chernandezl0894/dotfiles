@@ -12,7 +12,6 @@ return {
       css = { "stylelint" },
       scss = { "stylelint" },
       less = { "stylelint" },
-      python = { "ruff" },
     }
 
     local augroup = vim.api.nvim_create_augroup("NvimLint", { clear = true })

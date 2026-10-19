@@ -16,11 +16,7 @@ return {
     installer.setup({
       ensure_installed = {
         "prettier",
-        "pint",
-        "php-cs-fixer",
-        "black",
         "ruff",
-        "rustfmt",
         "goimports",
         "clang-format",
         "stylua",

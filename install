@@ -18,7 +18,6 @@ create_symlink() {
 
 create_symlink "$DOTFILES/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf"
 create_symlink "$DOTFILES/nvim" "$HOME/.config/nvim"
-create_symlink "$DOTFILES/phpactor" "$HOME/.config/phpactor"
 create_symlink "$DOTFILES/alacritty/alacritty.toml" "$HOME/.config/alacritty/alacritty.toml"
 create_symlink "$DOTFILES/alacritty/themes/catppuccin-frappe.toml" "$HOME/.config/alacritty/themes/catppuccin-frappe.toml"
 create_symlink "$DOTFILES/alacritty/themes/catppuccin-mocha.toml" "$HOME/.config/alacritty/themes/catppuccin-mocha.toml"
