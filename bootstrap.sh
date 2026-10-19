@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Bootstrap a Debian/Ubuntu machine for this dotfiles repo.
+# Bootstrap a Debian/Ubuntu, Fedora, or Arch Linux machine for this dotfiles repo.
 #
 # Installs the OS packages, language toolchains, Neovim, tmux, and the
 # Mason-managed LSPs/formatters/debug adapters used by the Neovim config.
@@ -112,27 +112,37 @@ NVIM_VERSION="${NVIM_VERSION#v}"
 # ---------------------------------------------------------------------------
 
 if [ ! -r /etc/os-release ]; then
-  die "Cannot read /etc/os-release; this script supports Debian and Ubuntu only."
+  die "Cannot read /etc/os-release; cannot detect the distribution."
 fi
 
 # shellcheck disable=SC1091
 . /etc/os-release
+
+# Map the distribution to the package manager family used throughout the script.
 case " ${ID:-} ${ID_LIKE:-} " in
-  *" debian "*|*" ubuntu "*) ;;
+  *" debian "*|*" ubuntu "*)
+    DISTRO_FAMILY=debian
+    ;;
+  *" fedora "*|*" rhel "*)
+    DISTRO_FAMILY=fedora
+    ;;
+  *" arch "*)
+    DISTRO_FAMILY=arch
+    ;;
   *)
-    die "Unsupported distribution: ${PRETTY_NAME:-unknown}. Debian/Ubuntu required."
+    die "Unsupported distribution: ${PRETTY_NAME:-unknown}. Debian/Ubuntu, Fedora, or Arch Linux required."
     ;;
 esac
 
 case "$(uname -m)" in
   x86_64|amd64)
-    DEB_ARCH="amd64"
+    ODIN_ARCH="amd64"
     NVIM_ARCH="x86_64"
     ZIG_ARCH="x86_64"
     GO_ARCH="amd64"
     ;;
   aarch64|arm64)
-    DEB_ARCH="arm64"
+    ODIN_ARCH="arm64"
     NVIM_ARCH="arm64"
     ZIG_ARCH="aarch64"
     GO_ARCH="arm64"
@@ -167,51 +177,125 @@ hash -r
 # OS packages
 # ---------------------------------------------------------------------------
 
-install_apt_packages() {
+install_os_packages() {
   # PHP is intentionally excluded; it is handled in a different editor.
-  log "Installing OS packages"
-  run "${SUDO[@]}" apt-get update
-  run "${SUDO[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    git curl wget ca-certificates gnupg lsb-release \
-    unzip zip tar xz-utils \
-    build-essential cmake pkg-config make \
-    clang lld gdb \
-    ripgrep fd-find \
-    python3 python3-pip python3-venv \
-    tmux xclip wl-clipboard openssh-client less
+  case "$DISTRO_FAMILY" in
+    debian)
+      log "Installing OS packages (apt)"
+      run "${SUDO[@]}" apt-get update
+      run "${SUDO[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        git curl wget ca-certificates gnupg lsb-release \
+        unzip zip tar xz-utils \
+        build-essential cmake pkg-config make \
+        clang lld gdb \
+        ripgrep fd-find \
+        python3 python3-pip python3-venv \
+        tmux xclip wl-clipboard openssh-client less
 
-  # Debian/Ubuntu install fd as "fdfind".
-  if [ -x /usr/bin/fdfind ]; then
-    run ln -sf /usr/bin/fdfind "$BIN_DIR/fd"
+      # Debian/Ubuntu install fd as "fdfind".
+      if [ -x /usr/bin/fdfind ]; then
+        run ln -sf /usr/bin/fdfind "$BIN_DIR/fd"
+      fi
+      ;;
+    fedora)
+      log "Installing OS packages (dnf)"
+      run "${SUDO[@]}" dnf install -y \
+        git curl wget ca-certificates gnupg2 \
+        unzip zip tar xz \
+        gcc gcc-c++ make cmake pkgconf-pkg-config \
+        clang lld gdb \
+        ripgrep fd-find \
+        python3 python3-pip \
+        tmux xclip wl-clipboard openssh-clients less
+      ;;
+    arch)
+      # No -Sy to avoid partial upgrades; refresh the database with -Syu yourself
+      # if the mirrors are stale.
+      log "Installing OS packages (pacman)"
+      run "${SUDO[@]}" pacman -S --needed --noconfirm \
+        git curl wget ca-certificates gnupg \
+        unzip zip tar xz \
+        gcc make cmake pkgconf \
+        clang lld gdb \
+        ripgrep fd \
+        python python-pip \
+        tmux xclip wl-clipboard openssh less
+      ;;
+  esac
+}
+
+install_node_nodesource() {
+  local family="$1"
+  local setup_url
+  local install_cmd
+
+  case "$family" in
+    debian)
+      setup_url="https://deb.nodesource.com/setup_22.x"
+      install_cmd=(apt-get install -y --no-install-recommends nodejs)
+      ;;
+    fedora)
+      setup_url="https://rpm.nodesource.com/setup_22.x"
+      install_cmd=(dnf install -y nodejs)
+      ;;
+    *)
+      die "NodeSource fallback is only supported on Debian and Fedora"
+      ;;
+  esac
+
+  log "Installing Node.js 22 from NodeSource"
+  if [ "$DRY_RUN" -eq 1 ]; then
+    printf '  [dry-run] curl -fsSL %s -o %s/node-setup.sh\n' "$setup_url" "$TMP_DIR"
+    printf '  [dry-run]'
+    printf ' %q' "${SUDO[@]}" -E bash "$TMP_DIR/node-setup.sh"
+    printf '\n'
+    printf '  [dry-run]'
+    printf ' %q' "${SUDO[@]}" "${install_cmd[@]}"
+    printf '\n'
+    return
   fi
+
+  curl -fsSL "$setup_url" -o "$TMP_DIR/node-setup.sh"
+  "${SUDO[@]}" -E bash "$TMP_DIR/node-setup.sh"
+  "${SUDO[@]}" "${install_cmd[@]}"
+}
+
+node_major_version() {
+  command -v node >/dev/null 2>&1 || return 0
+  node -v 2>/dev/null | sed 's/^v//' | cut -d. -f1
 }
 
 install_node() {
-  local major=0
-  if command -v node >/dev/null 2>&1; then
-    major="$(node -v | sed 's/^v//' | cut -d. -f1)"
-  fi
+  local major
+  major="$(node_major_version)"
 
   if [ "$major" -ge 18 ] 2>/dev/null && command -v npm >/dev/null 2>&1; then
     log "Node.js $(node -v) already installed"
     return
   fi
 
-  log "Installing Node.js 22 from NodeSource"
-  if [ "$DRY_RUN" -eq 1 ]; then
-    printf '  [dry-run] curl -fsSL https://deb.nodesource.com/setup_22.x -o %s/node-setup.sh\n' "$TMP_DIR"
-    printf '  [dry-run]'
-    printf ' %q' "${SUDO[@]}" -E bash "$TMP_DIR/node-setup.sh"
-    printf '\n'
-    printf '  [dry-run]'
-    printf ' %q' "${SUDO[@]}" apt-get install -y nodejs
-    printf '\n'
-    return
-  fi
+  case "$DISTRO_FAMILY" in
+    debian)
+      # Debian/Ubuntu repositories often ship an outdated Node.js.
+      install_node_nodesource debian
+      ;;
+    fedora)
+      log "Installing Node.js from the Fedora repositories"
+      run "${SUDO[@]}" dnf install -y nodejs npm
 
-  curl -fsSL https://deb.nodesource.com/setup_22.x -o "$TMP_DIR/node-setup.sh"
-  "${SUDO[@]}" -E bash "$TMP_DIR/node-setup.sh"
-  "${SUDO[@]}" apt-get install -y --no-install-recommends nodejs
+      # Fall back to NodeSource if the distribution shipped an old Node.js.
+      if [ "$DRY_RUN" -eq 0 ]; then
+        major="$(node_major_version)"
+        if [ -z "$major" ] || ! [ "$major" -ge 18 ] 2>/dev/null; then
+          install_node_nodesource fedora
+        fi
+      fi
+      ;;
+    arch)
+      log "Installing Node.js from the Arch repositories"
+      run "${SUDO[@]}" pacman -S --needed --noconfirm nodejs npm
+      ;;
+  esac
 }
 
 # ---------------------------------------------------------------------------
@@ -302,7 +386,7 @@ install_odin() {
     log "Odin $ODIN_TAG already installed"
   else
     log "Installing Odin $ODIN_TAG"
-    local archive="odin-linux-$DEB_ARCH-$ODIN_TAG.tar.gz"
+    local archive="odin-linux-$ODIN_ARCH-$ODIN_TAG.tar.gz"
     local url="https://github.com/odin-lang/Odin/releases/download/$ODIN_TAG/$archive"
 
     run curl -fL "$url" -o "$TMP_DIR/$archive"
@@ -529,9 +613,9 @@ LUA
 # Main
 # ---------------------------------------------------------------------------
 
-log "Detected ${PRETTY_NAME:-Debian/Ubuntu} ($DEB_ARCH)"
+log "Detected ${PRETTY_NAME:-unknown} (family: $DISTRO_FAMILY, arch: $ODIN_ARCH)"
 
-install_apt_packages
+install_os_packages
 install_node
 install_neovim
 install_go

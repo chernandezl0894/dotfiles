@@ -1,11 +1,13 @@
 # Dotfiles
 
-Personal development environment for **Debian/Ubuntu**, built around Neovim, tmux, Alacritty, and i3.
+Personal development environment for **Debian/Ubuntu**, **Fedora**, and **Arch Linux**, built around Neovim, tmux, Alacritty, and i3.
 
 The repository contains the configuration files plus a bootstrap script that installs the required toolchains, Neovim, tmux, and the LSPs/formatters/debug adapters used by the editor.
 
 ![Debian](https://img.shields.io/badge/Debian-12-A81D33?logo=debian&logoColor=white)
 ![Ubuntu](https://img.shields.io/badge/Ubuntu-supported-E95420?logo=ubuntu&logoColor=white)
+![Fedora](https://img.shields.io/badge/Fedora-supported-51A2DA?logo=fedora&logoColor=white)
+![Arch](https://img.shields.io/badge/Arch-supported-1793D1?logo=archlinux&logoColor=white)
 ![Neovim](https://img.shields.io/badge/Neovim-0.10.4-57A143?logo=neovim&logoColor=white)
 ![tmux](https://img.shields.io/badge/tmux-3.x-1BB91F?logo=tmux&logoColor=white)
 
@@ -18,20 +20,20 @@ This is a ready-to-reproduce workstation setup for a terminal-first workflow:
 - **tmux** with a `C-a` prefix, Vim-style pane navigation, session restore, and clipboard integration.
 - **Alacritty** configuration and themes.
 - **i3/i3status** desktop configuration.
-- **One bootstrap script** for Debian and Ubuntu on `x86_64` and `arm64`.
+- **One bootstrap script** for Debian/Ubuntu, Fedora, and Arch Linux on `x86_64` and `arm64`.
 
 PHP is intentionally excluded. It is handled in a different editor.
 
 ## Requirements
 
-- Debian 12+ or Ubuntu (64-bit `x86_64` or `arm64`).
+- Debian 12+, Ubuntu, Fedora, or Arch Linux (64-bit `x86_64` or `arm64`).
 - `sudo` access for OS packages, unless running as root.
 - Internet access during bootstrap.
 - Git.
 - A [Nerd Font](https://www.nerdfonts.com/) is recommended. The Alacritty and i3 configs use `JetBrainsMonoNLNerdFont`, which is not installed by the bootstrap script.
 
 > [!WARNING]
-> The bootstrap script runs `apt-get`, downloads toolchains, and replaces dotfile symlinks. Review it before running, especially on an existing machine. The `install` helper removes existing targets before creating symlinks.
+> The bootstrap script runs the distribution package manager (`apt-get`, `dnf`, or `pacman`), downloads toolchains, and replaces dotfile symlinks. Review it before running, especially on an existing machine. The `install` helper removes existing targets before creating symlinks.
 
 ## Usage
 
@@ -356,7 +358,7 @@ i3bar runs `i3status` at the top with a battery module (refreshed every 5 second
 
 ```text
 .
-├── bootstrap.sh       # Debian/Ubuntu provisioning script
+├── bootstrap.sh       # Debian/Ubuntu, Fedora, and Arch provisioning script
 ├── install            # Symlink helper for configuration files
 ├── nvim/              # Neovim configuration and lazy-lock.json
 ├── tmux/              # tmux configuration
@@ -375,13 +377,13 @@ i3bar runs `i3status` at the top with a battery module (refreshed every 5 second
 
 ## Future improvements
 
-- [ ] Add container-based CI for `bootstrap.sh` across Debian 12 and Ubuntu 24.04, on `x86_64` and `arm64`.
+- [ ] Add container-based CI for `bootstrap.sh` across Debian 12, Ubuntu 24.04, Fedora, and Arch, on `x86_64` and `arm64`.
 - [ ] Add ShellCheck and Lua formatting/linting checks to CI.
 - [ ] Add install profiles such as `minimal`, `desktop`, and `full`, plus a `--skip-toolchains` option for faster tests.
 - [ ] Install a Nerd Font and optional desktop packages (Alacritty, i3, i3status, dmenu, i3lock) behind an opt-in flag.
 - [ ] Add debug adapters for C/C++/Rust (`codelldb` or `gdb`) and Go (`delve`).
 - [ ] Evaluate Neovim 0.11+ and update pinned plugins when `gitsigns.nvim` and the LSP setup are compatible.
 - [ ] Add backup and rollback support for existing configuration files.
-- [ ] Extend support to Fedora and Arch Linux.
+- [x] Extend support to Fedora and Arch Linux.
 - [ ] Add a local override file for machine-specific settings and secrets.
 - [ ] Improve offline/idempotent behavior for toolchain downloads.
