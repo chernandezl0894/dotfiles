@@ -139,6 +139,26 @@ return {
     lsp.gopls.setup({
       on_attach = on_attach,
       capabilities = capabilities,
+      settings = {
+        gopls = {
+          -- Suggest packages that are not imported yet ("slices" -> stdlib "slices").
+          completeUnimported = true,
+          -- Complete members of embedded/unexported fields as well.
+          useDeepCompletions = true,
+          analyses = {
+            unusedwrite = true,
+            nilness = true,
+            embeddableStruct = true,
+            unusedparams = true,
+            unusedvariable = true,
+          },
+          staticcheck = false,
+          codelenses = {
+            codelenses = { "generate", "tidy", "test" },
+          },
+        },
+        gofumpt = false,
+      },
     })
 
     lsp.ols.setup({
