@@ -141,10 +141,7 @@ return {
       capabilities = capabilities,
       settings = {
         gopls = {
-          -- Suggest packages that are not imported yet ("slices" -> stdlib "slices").
-          completeUnimported = true,
-          -- Complete members of embedded/unexported fields as well.
-          useDeepCompletions = true,
+          -- Extra diagnostics on top of the compiler errors.
           analyses = {
             unusedwrite = true,
             nilness = true,
@@ -153,11 +150,15 @@ return {
             unusedvariable = true,
           },
           staticcheck = false,
+          -- Code lenses: "go generate", "go mod tidy" and run test/benchmark.
           codelenses = {
-            codelenses = { "generate", "tidy", "test" },
+            generate = true,
+            tidy = true,
+            test = true,
           },
+          -- gofumpt is not installed, keep goimports as the formatter.
+          gofumpt = false,
         },
-        gofumpt = false,
       },
     })
 
