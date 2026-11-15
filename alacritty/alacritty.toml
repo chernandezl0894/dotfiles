@@ -19,7 +19,7 @@ size = 16
 [font.normal]
 #family = "Inconsolata LGC Nerd Font Propo"
 #family = "Hack Nerd Font Propo"
-family = "JetBrainsMonoNLNerdFont"
+family = "AdwaitaMono Nerd Font Mono"
 style = "Regular"
 
 [font.bold]

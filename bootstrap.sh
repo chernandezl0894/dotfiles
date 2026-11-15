@@ -12,6 +12,7 @@
 #   --skip-mason          Do not install Mason packages
 #   --skip-dotfiles       Do not link dotfiles (assume config is already linked)
 #   --skip-tmux-plugins   Do not install TPM plugins
+#   --skip-fonts          Do not install the i3bar Nerd Font
 #   --nvim-version VER    Neovim version to install (default: 0.10.4)
 #   --dry-run             Print what would be done without changing anything
 #   -h, --help            Show this help
@@ -31,7 +32,12 @@ ODIN_TAG="${ODIN_TAG:-}"
 SKIP_MASON=0
 SKIP_DOTFILES=0
 SKIP_TMUX_PLUGINS=0
+SKIP_FONTS=0
 DRY_RUN=0
+
+# i3bar font. Keep the release and checksum in sync.
+NERD_FONT_VERSION="3.5.1"
+NERD_FONT_SHA256="d8976269e3906654232ab17378bfd0262f7462ba578b56098fe47a32b8f763ce"
 
 BIN_DIR="$HOME/.local/bin"
 OPT_DIR="$HOME/.local/opt"
@@ -68,7 +74,7 @@ run() {
 }
 
 usage() {
-  sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 while [ "$#" -gt 0 ]; do
@@ -81,6 +87,9 @@ while [ "$#" -gt 0 ]; do
       ;;
     --skip-tmux-plugins)
       SKIP_TMUX_PLUGINS=1
+      ;;
+    --skip-fonts)
+      SKIP_FONTS=1
       ;;
     --nvim-version)
       [ "$#" -ge 2 ] || die "--nvim-version requires a value"
@@ -428,7 +437,7 @@ install_neovim() {
 }
 
 # ---------------------------------------------------------------------------
-# Dotfiles and tmux plugins
+# Dotfiles, fonts, and tmux plugins
 # ---------------------------------------------------------------------------
 
 # Each managed path mirrors the repository layout under ~/.config, e.g.
@@ -466,6 +475,47 @@ link_dotfiles() {
     i3status/config; do
     link_file "$DOTFILES_DIR/$relative" "$HOME/.config/$relative"
   done
+}
+
+install_fonts() {
+  if [ "$SKIP_FONTS" -eq 1 ]; then
+    log "Skipping Nerd Font installation (--skip-fonts)"
+    return
+  fi
+
+  if command -v fc-list >/dev/null 2>&1 &&
+    fc-list 2>/dev/null | grep -Fi 'AdwaitaMono Nerd Font Mono' >/dev/null; then
+    log "AdwaitaMono Nerd Font already installed"
+    return
+  fi
+
+  if ! command -v curl >/dev/null 2>&1 || ! command -v unzip >/dev/null 2>&1; then
+    warn "curl and unzip are required for the Nerd Font; skipping font installation."
+    return
+  fi
+
+  local font_dir="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/adwaita-mono-nerd"
+  local archive="$TMP_DIR/AdwaitaMono.zip"
+  local url="https://github.com/ryanoasis/nerd-fonts/releases/download/v${NERD_FONT_VERSION}/AdwaitaMono.zip"
+
+  log "Installing AdwaitaMono Nerd Font ${NERD_FONT_VERSION}"
+  if ! run curl -fsSL -o "$archive" "$url"; then
+    warn "Could not download $url; skipping font installation."
+    return
+  fi
+
+  if [ "$DRY_RUN" -eq 0 ]; then
+    printf '%s  %s\n' "$NERD_FONT_SHA256" "$archive" | sha256sum -c - >/dev/null 2>&1 ||
+      die "Checksum mismatch for $archive"
+  fi
+
+  run mkdir -p "$font_dir"
+  run unzip -oq "$archive" '*.ttf' -d "$font_dir"
+  if command -v fc-cache >/dev/null 2>&1; then
+    run fc-cache -f "$font_dir"
+  else
+    warn "fc-cache not found; install fontconfig and run 'fc-cache -f' manually."
+  fi
 }
 
 install_tmux_plugins() {
@@ -650,6 +700,7 @@ install_zig
 install_odin
 
 link_dotfiles
+install_fonts
 install_tmux_plugins
 
 install_lazy_plugins

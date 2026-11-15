@@ -30,7 +30,7 @@ PHP is intentionally excluded. It is handled in a different editor.
 - `sudo` access for OS packages, unless running as root.
 - Internet access during bootstrap.
 - Git.
-- A [Nerd Font](https://www.nerdfonts.com/) is recommended. The Alacritty and i3 configs use `JetBrainsMonoNLNerdFont`, which is not installed by the bootstrap script.
+- A [Nerd Font](https://www.nerdfonts.com/) is required by the i3 bar. The i3 config uses `AdwaitaMono Nerd Font Mono`, which the bootstrap script installs automatically (see the i3 section for the manual command).
 
 > [!WARNING]
 > The bootstrap script runs the distribution package manager (`apt-get`, `dnf`, or `pacman`), downloads toolchains, and replaces dotfile symlinks. Review it before running, especially on an existing machine: linking removes existing targets before creating symlinks.
@@ -59,6 +59,7 @@ Open a new shell after the bootstrap finishes so the updated `PATH` is used.
 | `--skip-mason` | Install Neovim plugins but skip Mason-managed LSPs, formatters, and debug adapters. |
 | `--skip-dotfiles` | Do not link the dotfiles; assume the configuration is already linked. |
 | `--skip-tmux-plugins` | Do not clone TPM or install tmux plugins. |
+| `--skip-fonts` | Do not download or install the i3bar Nerd Font. |
 | `--nvim-version VER` | Install a specific Neovim version. Default: `0.10.4`. |
 | `--dry-run` | Print the actions without changing the system. |
 | `-h`, `--help` | Show usage. |
@@ -77,7 +78,7 @@ The bootstrap script is idempotent and always (re)creates the configuration syml
 ./bootstrap.sh --skip-mason --skip-tmux-plugins
 ```
 
-It links Neovim, tmux, Alacritty, i3, and i3status into `~/.config`, replacing existing targets.
+It links Neovim, tmux, Alacritty, i3, and i3status into `~/.config`, replacing existing targets. It also installs the i3bar Nerd Font into `${XDG_DATA_HOME:-~/.local/share}/fonts` unless `--skip-fonts` is passed.
 
 ## Packages and libraries
 
@@ -282,10 +283,23 @@ Copy mode (Vim keys):
 
 ### Alacritty and i3
 
-The bootstrap script links the Alacritty and i3 configurations but does not install the desktop packages or fonts. Install Alacritty, i3, i3status, dmenu, i3lock, xss-lock, NetworkManager applet, and a Nerd Font separately if you use those configs.
+The bootstrap script links the Alacritty and i3 configurations and installs the i3bar Nerd Font, but it does not install the desktop packages. Install Alacritty, i3, i3status, dmenu, i3lock, xss-lock, and the NetworkManager applet separately if you use those configs.
 
-- **Alacritty**: Sweetie Light theme, JetBrainsMonoNL Nerd Font, 160x80 initial window, clipboard shortcuts, and 100,000-line scrollback.
-- **i3**: `Mod4` as the modifier key, dmenu launcher, standard workspace bindings, and i3status with battery information.
+- **Alacritty**: Sweetie Light theme, AdwaitaMono Nerd Font Mono, 160x80 initial window, clipboard shortcuts, and 100,000-line scrollback.
+- **i3**: `Mod4` as the modifier key, dmenu launcher, standard workspace bindings, and a minimalist i3status bar with Wi-Fi, RAM, battery, and local date/time (Lima).
+
+To install the bar font manually (the bootstrap script does this automatically):
+
+```bash
+mkdir -p ~/.local/share/fonts/adwaita-mono-nerd
+curl -sSL -o /tmp/AdwaitaMono.zip \
+  https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/AdwaitaMono.zip
+unzip -oq /tmp/AdwaitaMono.zip '*.ttf' -d ~/.local/share/fonts/adwaita-mono-nerd
+fc-cache -f ~/.local/share/fonts
+fc-list | grep -i adwaita   # verify
+```
+
+The `Mono` variant (`AdwaitaMono Nerd Font Mono`) keeps icons at a single cell width so the bar does not shift.
 
 #### i3 cheatsheet
 
@@ -352,7 +366,7 @@ Media keys:
 | `XF86AudioMute` | Mute / unmute the default sink. |
 | `XF86AudioMicMute` | Mute / unmute the default source. |
 
-i3bar runs `i3status` at the top with a battery module (refreshed every 5 seconds).
+i3bar runs `i3status` at the bottom, refreshed every 5 seconds. From left to right it shows Wi-Fi (ESSID, colored by signal quality), RAM usage, battery (icon by state, percentage, and time left), and the date/time in `America/Lima`. Volume keys send `SIGUSR1` to `i3status`, so the bar refreshes immediately even though it no longer displays the volume.
 
 ## Repository layout
 
