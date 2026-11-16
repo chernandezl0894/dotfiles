@@ -1,8 +1,8 @@
 # Dotfiles
 
-Personal development environment for **Debian/Ubuntu**, **Fedora**, and **Arch Linux**, built around Neovim, tmux, Alacritty, and i3.
+Personal development environment for **Debian/Ubuntu**, **Fedora**, and **Arch Linux**, built around Neovim, fish, tmux, Alacritty, and i3.
 
-The repository contains the configuration files plus a bootstrap script that installs the required toolchains, Neovim, tmux, and the LSPs/formatters/debug adapters used by the editor.
+The repository contains the configuration files plus a bootstrap script that installs the required toolchains, Neovim, fish, tmux, and the LSPs/formatters/debug adapters used by the editor.
 
 ![Debian](https://img.shields.io/badge/Debian-12-A81D33?logo=debian&logoColor=white)
 ![Ubuntu](https://img.shields.io/badge/Ubuntu-supported-E95420?logo=ubuntu&logoColor=white)
@@ -17,6 +17,7 @@ This is a ready-to-reproduce workstation setup for a terminal-first workflow:
 
 - **Neovim** with LSP, completion, formatting, linting, Treesitter, Git integration, debugging, and test running.
 - **Language support** for Python, C/C++, Go, Rust, Odin, Zig, Lua, JavaScript/TypeScript, HTML, CSS, and Tailwind.
+- **fish** with history autosuggestions, syntax highlighting, abbreviations, and a compact two-line prompt for narrow screens.
 - **tmux** with a `C-a` prefix, Vim-style pane navigation, session restore, and clipboard integration.
 - **Alacritty** configuration and themes.
 - **i3/i3status** desktop configuration.
@@ -60,6 +61,7 @@ Open a new shell after the bootstrap finishes so the updated `PATH` is used.
 | `--skip-dotfiles` | Do not link the dotfiles; assume the configuration is already linked. |
 | `--skip-tmux-plugins` | Do not clone TPM or install tmux plugins. |
 | `--skip-fonts` | Do not download or install the i3bar Nerd Font. |
+| `--set-fish-shell` | Set fish as the login shell for the current user. |
 | `--nvim-version VER` | Install a specific Neovim version. Default: `0.10.4`. |
 | `--dry-run` | Print the actions without changing the system. |
 | `-h`, `--help` | Show usage. |
@@ -78,7 +80,7 @@ The bootstrap script is idempotent and always (re)creates the configuration syml
 ./bootstrap.sh --skip-mason --skip-tmux-plugins
 ```
 
-It links Neovim, tmux, Alacritty, i3, and i3status into `~/.config`, replacing existing targets. It also installs the i3bar Nerd Font into `${XDG_DATA_HOME:-~/.local/share}/fonts` unless `--skip-fonts` is passed.
+It links Neovim, fish, tmux, Alacritty, i3, and i3status into `~/.config`, replacing existing targets. It also installs the i3bar Nerd Font into `${XDG_DATA_HOME:-~/.local/share}/fonts` unless `--skip-fonts` is passed.
 
 ## Packages and libraries
 
@@ -91,7 +93,7 @@ The bootstrap installs:
 - Build tools: `build-essential`, `cmake`, `pkg-config`, `make`, `clang`, `lld`, `gdb`
 - Utilities: `git`, `curl`, `wget`, `unzip`, `zip`, `tar`, `xz-utils`, `ripgrep`, `fd-find`, `less`, `openssh-client`
 - Python: `python3`, `python3-pip`, `python3-venv`
-- Terminal: `tmux`, `xclip`, `wl-clipboard`
+- Terminal: `fish`, `tmux`, `xclip`, `wl-clipboard`
 
 `fd-find` is exposed as `fd` in `~/.local/bin`.
 
@@ -183,6 +185,51 @@ The leader key is `Space`.
 | `<leader>` + backtick | Toggle terminal. |
 | `<leader>m` / `<leader>mc` / `<leader>mr` | Run `make` / `make clean` / `make run`. |
 | `<leader>1` | Reload Neovim config and open Mason. |
+
+### fish
+
+The repository ships a fish configuration: fish provides history autosuggestions,
+syntax highlighting, and tab completions without extra plugins. The configuration
+lives in `fish/config.fish` and `fish/functions/`, and the bootstrap installs fish
+on every supported distribution.
+
+- **Two-line prompt**: the working directory and git branch are on the first line,
+  and only the `❯` marker is on the second. The prompt therefore does not consume
+  horizontal space next to the command, which keeps narrow terminals readable.
+- **Narrow-screen handling**: intermediate directories are abbreviated
+  (`~/g/chernandezl0894/dotfiles`), long paths are truncated from the left with
+  `…`, and branch names are capped at 20 characters. There is no right prompt.
+- **Git segment**: shows the current branch, or the short commit hash on a
+  detached HEAD, plus `*` when the working tree has staged, unstaged, or
+  untracked changes.
+- **Colors** use the terminal's ANSI palette, so the prompt follows the active
+  Alacritty theme (light or dark). `fish_prompt_color_cwd`,
+  `fish_prompt_color_git`, `fish_prompt_color_success`, and
+  `fish_prompt_color_error` can be changed in `config.fish`. Syntax
+  highlighting and autosuggestions follow fish's own theme (`fish_config`).
+- **PATH and editor**: `~/.local/bin`, `~/.cargo/bin`, and `~/go/bin` are added
+  to `PATH`; `EDITOR`, `VISUAL`, and `PAGER` default to `nvim`, `nvim`, and
+  `less` when they are not already set.
+
+Abbreviations expand as you type and remain editable in history:
+
+| Abbreviation | Expands to |
+| --- | --- |
+| `ll`, `la` | `ls -lah` |
+| `gs` | `git status -sb` |
+| `gd` | `git diff` |
+| `gl` | `git log --oneline --graph --decorate -20` |
+| `ga` / `gc` | `git add` / `git commit` |
+| `tm` | `tmux new -A -s main` |
+| `ta` | `tmux attach` |
+
+New shells keep using the previous login shell by default. To make fish the
+login shell, run the bootstrap with `--set-fish-shell`, or do it manually and
+then start a new session:
+
+```bash
+chsh -s "$(command -v fish)"   # log out and back in afterwards
+```
 
 ### tmux
 
@@ -285,7 +332,7 @@ Copy mode (Vim keys):
 
 The bootstrap script links the Alacritty and i3 configurations and installs the i3bar Nerd Font, but it does not install the desktop packages. Install Alacritty, i3, i3status, dmenu, i3lock, xss-lock, and the NetworkManager applet separately if you use those configs.
 
-- **Alacritty**: Sweetie Light theme, AdwaitaMono Nerd Font Mono, 160x80 initial window, clipboard shortcuts, and 100,000-line scrollback.
+- **Alacritty**: Sweetie Light theme, AdwaitaMono Nerd Font Mono, 160x80 initial window, clipboard shortcuts, and 100,000-line scrollback. The configuration uses the current file schema (`[general]` for `import` and `live_config_reload`), so it loads without the `alacritty migrate` warning on Alacritty 0.13 and newer.
 - **i3**: `Mod4` as the modifier key, dmenu launcher, standard workspace bindings, and a minimalist i3status bar with Wi-Fi, RAM, battery, and local date/time (Lima).
 
 To install the bar font manually (the bootstrap script does this automatically):
@@ -374,6 +421,7 @@ i3bar runs `i3status` at the bottom, refreshed every 5 seconds. From left to rig
 .
 ├── bootstrap.sh       # Debian/Ubuntu, Fedora, and Arch provisioning script
 ├── nvim/              # Neovim configuration and lazy-lock.json
+├── fish/              # fish shell configuration and prompt functions
 ├── tmux/              # tmux configuration
 ├── alacritty/         # Alacritty configuration and themes
 ├── i3/                # i3 window manager configuration

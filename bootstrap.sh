@@ -13,6 +13,7 @@
 #   --skip-dotfiles       Do not link dotfiles (assume config is already linked)
 #   --skip-tmux-plugins   Do not install TPM plugins
 #   --skip-fonts          Do not install the i3bar Nerd Font
+#   --set-fish-shell      Set fish as the login shell for the current user
 #   --nvim-version VER    Neovim version to install (default: 0.10.4)
 #   --dry-run             Print what would be done without changing anything
 #   -h, --help            Show this help
@@ -33,6 +34,7 @@ SKIP_MASON=0
 SKIP_DOTFILES=0
 SKIP_TMUX_PLUGINS=0
 SKIP_FONTS=0
+SET_FISH_SHELL=0
 DRY_RUN=0
 
 # i3bar font. Keep the release and checksum in sync.
@@ -74,7 +76,7 @@ run() {
 }
 
 usage() {
-  sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 while [ "$#" -gt 0 ]; do
@@ -90,6 +92,9 @@ while [ "$#" -gt 0 ]; do
       ;;
     --skip-fonts)
       SKIP_FONTS=1
+      ;;
+    --set-fish-shell)
+      SET_FISH_SHELL=1
       ;;
     --nvim-version)
       [ "$#" -ge 2 ] || die "--nvim-version requires a value"
@@ -199,7 +204,7 @@ install_os_packages() {
         clang lld gdb \
         ripgrep fd-find \
         python3 python3-pip python3-venv \
-        tmux xclip wl-clipboard openssh-client less
+        fish tmux xclip wl-clipboard openssh-client less
 
       # Debian/Ubuntu install fd as "fdfind".
       if [ -x /usr/bin/fdfind ]; then
@@ -215,7 +220,7 @@ install_os_packages() {
         clang lld gdb \
         ripgrep fd-find \
         python3 python3-pip \
-        tmux xclip wl-clipboard openssh-clients less
+        fish tmux xclip wl-clipboard openssh-clients less
       ;;
     arch)
       # No -Sy to avoid partial upgrades; refresh the database with -Syu yourself
@@ -228,7 +233,7 @@ install_os_packages() {
         clang lld gdb \
         ripgrep fd \
         python python-pip \
-        tmux xclip wl-clipboard openssh less
+        fish tmux xclip wl-clipboard openssh less
       ;;
   esac
 }
@@ -464,6 +469,10 @@ link_dotfiles() {
   for relative in \
     tmux/tmux.conf \
     nvim \
+    fish/config.fish \
+    fish/functions/fish_prompt.fish \
+    fish/functions/__fish_prompt_pwd.fish \
+    fish/functions/__fish_prompt_git.fish \
     alacritty/alacritty.toml \
     alacritty/themes/catppuccin-frappe.toml \
     alacritty/themes/catppuccin-mocha.toml \
@@ -515,6 +524,52 @@ install_fonts() {
     run fc-cache -f "$font_dir"
   else
     warn "fc-cache not found; install fontconfig and run 'fc-cache -f' manually."
+  fi
+}
+
+configure_login_shell() {
+  if [ "$SET_FISH_SHELL" -eq 0 ]; then
+    log "Keeping the current login shell (use --set-fish-shell to change it)"
+    return
+  fi
+
+  local fish_bin
+  fish_bin="$(command -v fish 2>/dev/null || true)"
+  if [ -z "$fish_bin" ]; then
+    warn "fish is not installed; cannot change the login shell."
+    return
+  fi
+
+  local current_shell
+  current_shell="$(getent passwd "$(id -un)" 2>/dev/null | cut -d: -f7)"
+  if [ "$(basename "${current_shell:-}")" = fish ]; then
+    log "fish is already the login shell"
+    return
+  fi
+
+  # Prefer the path registered in /etc/shells. Fedora also ships a copy at
+  # /usr/sbin/fish (which PATH finds first) but only lists /usr/bin/fish.
+  if [ -r /etc/shells ]; then
+    local shell
+    while IFS= read -r shell; do
+      case "$shell" in
+        '' | \#*) continue ;;
+      esac
+      if [ "$(basename "$shell")" = fish ] && [ -x "$shell" ]; then
+        fish_bin="$shell"
+        break
+      fi
+    done </etc/shells
+  fi
+
+  if [ -r /etc/shells ] && ! grep -Fxq "$fish_bin" /etc/shells; then
+    warn "$fish_bin is not listed in /etc/shells; add it before changing the login shell."
+    return
+  fi
+
+  log "Setting fish as the login shell"
+  if ! run chsh -s "$fish_bin"; then
+    warn "Could not change the login shell; run 'chsh -s $fish_bin' manually."
   fi
 }
 
@@ -700,6 +755,7 @@ install_zig
 install_odin
 
 link_dotfiles
+configure_login_shell
 install_fonts
 install_tmux_plugins
 
@@ -711,8 +767,12 @@ hash -r
 if [ "$DRY_RUN" -eq 0 ] && [ "$(command -v nvim 2>/dev/null)" != "$BIN_DIR/nvim" ]; then
   warn "nvim resolves to $(command -v nvim 2>/dev/null || echo 'nothing'); put $BIN_DIR before other PATH entries."
 fi
+if [ "$SET_FISH_SHELL" -eq 0 ] && command -v fish >/dev/null 2>&1; then
+  printf '\nfish is installed but not your login shell. Run %s --set-fish-shell to change it,\n' "$0"
+  printf 'or start a fish session with: fish\n'
+fi
 printf '\nInstalled versions:\n'
-for bin in nvim go rustc cargo zig odin tmux node; do
+for bin in nvim go rustc cargo zig odin tmux node fish; do
   if command -v "$bin" >/dev/null 2>&1; then
     case "$bin" in
       nvim) printf '  %-8s %s\n' "$bin" "$("$bin" --version 2>/dev/null | head -n1)" ;;
@@ -720,7 +780,7 @@ for bin in nvim go rustc cargo zig odin tmux node; do
       rustc|cargo) printf '  %-8s %s\n' "$bin" "$("$bin" --version 2>/dev/null)" ;;
       zig) printf '  %-8s %s\n' "$bin" "$("$bin" version 2>/dev/null)" ;;
       odin) printf '  %-8s %s\n' "$bin" "$("$bin" version 2>/dev/null | head -n1)" ;;
-      tmux|node) printf '  %-8s %s\n' "$bin" "$("$bin" -V 2>/dev/null || "$bin" --version 2>/dev/null)" ;;
+      tmux|node|fish) printf '  %-8s %s\n' "$bin" "$("$bin" -V 2>/dev/null || "$bin" --version 2>/dev/null)" ;;
     esac
   fi
 done
