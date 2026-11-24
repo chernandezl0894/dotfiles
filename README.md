@@ -1,8 +1,8 @@
 # Dotfiles
 
-Personal development environment for **Debian/Ubuntu**, **Fedora**, and **Arch Linux**, built around Neovim, fish, tmux, Alacritty, and i3.
+Personal development environment for **Debian/Ubuntu**, **Fedora**, and **Arch Linux**, built around Neovim, zsh, tmux, Alacritty, and i3.
 
-The repository contains the configuration files plus a bootstrap script that installs the required toolchains, Neovim, fish, tmux, and the LSPs/formatters/debug adapters used by the editor.
+The repository contains the configuration files plus a bootstrap script that installs the required toolchains, Neovim, zsh, tmux, the minimal i3 desktop, and the LSPs/formatters/debug adapters used by the editor.
 
 ![Debian](https://img.shields.io/badge/Debian-12-A81D33?logo=debian&logoColor=white)
 ![Ubuntu](https://img.shields.io/badge/Ubuntu-supported-E95420?logo=ubuntu&logoColor=white)
@@ -17,13 +17,13 @@ This is a ready-to-reproduce workstation setup for a terminal-first workflow:
 
 - **Neovim** with LSP, completion, formatting, linting, Treesitter, Git integration, debugging, and test running.
 - **Language support** for Python, C/C++, Go, Rust, Odin, Zig, Lua, JavaScript/TypeScript, HTML, CSS, and Tailwind.
-- **fish** with history autosuggestions, syntax highlighting, abbreviations, and a compact two-line prompt for narrow screens.
-- **tmux** with a `C-a` prefix, Vim-style pane navigation, session restore, and clipboard integration.
-- **Alacritty** configuration and themes.
-- **i3/i3status** desktop configuration.
+- **zsh** with shared history, completion, a compact two-line prompt, and optional pyenv/nvm/zoxide/direnv hooks.
+- **tmux** with a `C-a` prefix, Vim-style pane navigation, fzf project switching, session restore, and clipboard integration.
+- **Alacritty** as the primary terminal: Nerd Font, padding, opacity, Vi mode, and clipboard shortcuts.
+- **i3/i3status** with a lightweight configuration for low-resource laptops.
 - **One bootstrap script** for Debian/Ubuntu, Fedora, and Arch Linux on `x86_64` and `arm64`.
 
-PHP is intentionally excluded. It is handled in a different editor.
+
 
 ## Requirements
 
@@ -61,7 +61,7 @@ Open a new shell after the bootstrap finishes so the updated `PATH` is used.
 | `--skip-dotfiles` | Do not link the dotfiles; assume the configuration is already linked. |
 | `--skip-tmux-plugins` | Do not clone TPM or install tmux plugins. |
 | `--skip-fonts` | Do not download or install the i3bar Nerd Font. |
-| `--set-fish-shell` | Set fish as the login shell for the current user. |
+| `--set-zsh-shell` | Set zsh as the login shell for the current user. |
 | `--nvim-version VER` | Install a specific Neovim version. Default: `0.10.4`. |
 | `--dry-run` | Print the actions without changing the system. |
 | `-h`, `--help` | Show usage. |
@@ -69,7 +69,7 @@ Open a new shell after the bootstrap finishes so the updated `PATH` is used.
 Environment overrides:
 
 ```bash
-NVIM_VERSION=0.10.4 GO_VERSION=1.27.2 ZIG_VERSION=0.16.0 ODIN_TAG=dev-2026-10 LAZYGIT_VERSION=0.66.4 ./bootstrap.sh
+NVIM_VERSION=0.10.4 GO_VERSION=1.27.2 ZIG_VERSION=0.16.0 ODIN_TAG=dev-2026-10 LAZYGIT_VERSION=0.66.4 ALACRITTY_VERSION=0.17.0 ./bootstrap.sh
 ```
 
 ### Re-link configuration
@@ -80,7 +80,7 @@ The bootstrap script is idempotent and always (re)creates the configuration syml
 ./bootstrap.sh --skip-mason --skip-tmux-plugins
 ```
 
-It links Neovim, fish, tmux, Alacritty, Ghostty, Git, lazygit, i3, and i3status into `~/.config`, replacing existing targets. It also links `tmux-sessionizer` into `~/.local/bin` and `tmux/tmux.conf` into `~/.tmux.conf`, and installs the i3bar Nerd Font into `${XDG_DATA_HOME:-~/.local/share}/fonts` unless `--skip-fonts` is passed.
+It links Neovim, zsh, tmux, Alacritty, Ghostty, Git, lazygit, i3, and i3status into `~/.config`, replacing existing targets. It also links `zsh/zshrc` to `~/.zshrc`, `tmux-sessionizer` into `~/.local/bin`, and `tmux/tmux.conf` into `~/.tmux.conf`, and installs the i3bar Nerd Font into `${XDG_DATA_HOME:-~/.local/share}/fonts` unless `--skip-fonts` is passed.
 
 ## Packages and libraries
 
@@ -91,9 +91,12 @@ The bootstrap installs the following system packages, toolchains, and Neovim dep
 The bootstrap installs:
 
 - Build tools: `build-essential`, `cmake`, `pkg-config`, `make`, `clang`, `lld`, `gdb`
+- Build headers for Alacritty: `fontconfig`, `freetype`, `xcb`, `xkbcommon`, and `wayland` development packages
 - Utilities: `git`, `curl`, `wget`, `unzip`, `zip`, `tar`, `xz-utils`, `ripgrep`, `fd-find`, `fzf`, `less`, `openssh-client`
 - Python: `python3`, `python3-pip`, `python3-venv`
-- Terminal: `fish`, `tmux`, `xclip`, `wl-clipboard`
+- Terminal: `zsh`, `tmux`, `xclip`, `wl-clipboard`
+- Desktop (lightweight): `i3`, `i3status`, `i3lock`, `xss-lock`, `rofi`, `maim`, `brightnessctl`, `playerctl`, `dex`
+- Shell helpers: `zoxide`, `direnv`
 
 `fd-find` is exposed as `fd` in `~/.local/bin`.
 
@@ -136,6 +139,10 @@ The config uses `lazy.nvim` and the committed `lazy-lock.json` for reproducible 
 
 Python projects are detected through `.venv`, `venv`, or `.virtualenv` directories. Ruff handles import organization, while Pyright is configured not to duplicate it.
 
+HTML/JS/CSS work includes Emmet completions in HTML, CSS, JSX, and TSX files,
+Prettier and eslint/stylelint, automatic tag renaming, bracket pairs, and CSS
+color previews.
+
 #### Neovim plugins
 
 | Plugin | Purpose |
@@ -145,11 +152,17 @@ Python projects are detected through `.venv`, `venv`, or `.virtualenv` directori
 | `mason.nvim`, `mason-lspconfig.nvim`, `mason-tool-installer.nvim` | LSP/tool installation and management. |
 | `blink.cmp`, `friendly-snippets` | Completion and snippets. |
 | `LuaSnip` | Snippet engine. |
-| `nvim-treesitter`, `nvim-treesitter-textobjects` | Syntax highlighting, indentation, and text objects. |
-| `telescope.nvim` | Fuzzy finding for files, buffers, symbols, help, and Git. |
+| `nvim-treesitter`, `nvim-treesitter-textobjects` | Syntax highlighting, indentation, text objects, and function/parameter jumps. |
+| `telescope.nvim`, `telescope-fzf-native.nvim`, `telescope-ui-select.nvim` | Fuzzy finding for files, buffers, symbols, help, Git, diagnostics, keymaps, and `vim.ui.select`. |
+| `trouble.nvim` | Diagnostics, symbols, references, quickfix, and location lists. |
+| `flash.nvim`, `harpoon` | Fast jumps and pinned project files. |
+| `persistence.nvim` | Per-project session restore. |
+| `grug-far.nvim`, `nvim-surround` | Project-wide search/replace and surround editing. |
+| `nvim-ts-autotag`, `nvim-autopairs`, `nvim-colorizer.lua` | HTML/JSX tag handling, bracket pairs, and CSS color previews. |
+| `render-markdown.nvim`, `todo-comments.nvim`, `rainbow-delimiters.nvim` | Markdown rendering, TODO search, and delimiter colors. |
 | `conform.nvim` | Format-on-save and manual formatting. |
 | `nvim-lint` | Linting for JavaScript, TypeScript, CSS, SCSS, and Less. |
-| `nvim-dap`, `nvim-dap-ui`, `mason-nvim-dap` | Debug Adapter Protocol UI and Python debugging. |
+| `nvim-dap`, `nvim-dap-ui`, `nvim-dap-virtual-text`, `mason-nvim-dap` | Debug Adapter Protocol UI, inline values, and Python debugging. |
 | `neotest`, `neotest-python` | Running and inspecting Python tests. |
 | `gitsigns.nvim`, `vim-fugitive` | Git hunks, line blame, and Git commands. |
 | `toggleterm.nvim` | Integrated terminals, Makefile shortcuts, and a lazygit float. |
@@ -171,7 +184,17 @@ The leader key is `Space`.
 | `<leader>sf` | Find files. |
 | `<leader>ss` | Live grep. |
 | `<leader>sb` | Search buffers. |
+| `<leader>sd` | Search diagnostics. |
+| `<leader>sk` | Search keymaps. |
+| `<leader>st` | Search TODOs. |
+| `<leader>sr` | Search and replace in the project. |
 | `<C-p>` | Search Git files. |
+| `s` / `S` | Flash jump / Flash Treesitter. |
+| `<leader>xx` / `<leader>xX` / `<leader>xs` / `<leader>xr` / `<leader>xl` / `<leader>xq` | Trouble: diagnostics / buffer diagnostics / symbols / references / location list / quickfix. |
+| `<leader>Ha` / `<leader>Hm` / `<leader>H1`…`<leader>H4` | Harpoon: add file / menu / jump to file. |
+| `<leader>qs` / `<leader>ql` / `<leader>qd` | Restore session / restore last session / don't save session. |
+| `<leader>um` | Toggle in-buffer Markdown rendering. |
+| `]f` / `[f` / `]a` / `[a` | Next/previous function or parameter. |
 | `<leader>e` | Show diagnostic float. |
 | `<leader>ca` | Code action. |
 | `<leader>rn` | Rename symbol. |
@@ -222,34 +245,26 @@ Press `<leader>gg` to open it in a floating terminal at the repository root.
 Files opened from lazygit with `e` open in the Neovim instance that launched it
 (`os.editPreset: nvim-remote`).
 
-### fish
+### zsh
 
-The repository ships a fish configuration: fish provides history autosuggestions,
-syntax highlighting, and tab completions without extra plugins. The configuration
-lives in `fish/config.fish` and `fish/functions/`, and the bootstrap installs fish
-on every supported distribution.
+The bootstrap installs zsh and links `zsh/zshrc` to `~/.zshrc`. The
+configuration is intentionally minimal:
 
-- **Two-line prompt**: the working directory and git branch are on the first line,
-  and only the `❯` marker is on the second. The prompt therefore does not consume
-  horizontal space next to the command, which keeps narrow terminals readable.
-- **Narrow-screen handling**: intermediate directories are abbreviated
-  (`~/g/chernandezl0894/dotfiles`), long paths are truncated from the left with
-  `…`, and branch names are capped at 20 characters. There is no right prompt.
-- **Git segment**: shows the current branch, or the short commit hash on a
-  detached HEAD, plus `*` when the working tree has staged, unstaged, or
-  untracked changes.
-- **Colors** use the terminal's ANSI palette, so the prompt follows the active
-  Alacritty theme (light or dark). `fish_prompt_color_cwd`,
-  `fish_prompt_color_git`, `fish_prompt_color_success`, and
-  `fish_prompt_color_error` can be changed in `config.fish`. Syntax
-  highlighting and autosuggestions follow fish's own theme (`fish_config`).
-- **PATH and editor**: `~/.local/bin`, `~/.cargo/bin`, and `~/go/bin` are added
+- **Two-line prompt**: the working directory and git branch are on the first line
+  and the `❯` marker on the second, so narrow terminals stay readable.
+- **History and completion**: 20,000 shared history entries, duplicate
+  suppression, and menu completion.
+- **PATH and editor**: `~/.local/bin`, `~/go/bin`, and `~/.cargo/bin` are added
   to `PATH`; `EDITOR`, `VISUAL`, and `PAGER` default to `nvim`, `nvim`, and
-  `less` when they are not already set.
+  `less`.
+- **Optional integrations**: pyenv, nvm, zoxide, and direnv are loaded only when
+  they are installed.
+- **Machine-specific settings** belong in `~/.zshrc.local`, which is sourced at
+  the end when present.
 
-Abbreviations expand as you type and remain editable in history:
+Aliases:
 
-| Abbreviation | Expands to |
+| Alias | Expands to |
 | --- | --- |
 | `ll`, `la` | `ls -lah` |
 | `gs` | `git status -sb` |
@@ -258,13 +273,14 @@ Abbreviations expand as you type and remain editable in history:
 | `ga` / `gc` | `git add` / `git commit` |
 | `tm` | `tmux new -A -s main` |
 | `ta` | `tmux attach` |
+| `reload` | `source ~/.zshrc` |
 
-New shells keep using the previous login shell by default. To make fish the
-login shell, run the bootstrap with `--set-fish-shell`, or do it manually and
+New shells keep using the previous login shell by default. To make zsh the
+login shell, run the bootstrap with `--set-zsh-shell`, or do it manually and
 then start a new session:
 
 ```bash
-chsh -s "$(command -v fish)"   # log out and back in afterwards
+chsh -s "$(command -v zsh)"   # log out and back in afterwards
 ```
 
 ### tmux
@@ -272,13 +288,18 @@ chsh -s "$(command -v fish)"   # log out and back in afterwards
 - Prefix changed from `C-b` to `C-a`.
 - Mouse support, 10,000-line history, and Vim-style copy mode.
 - Vim-style pane navigation with `h`, `j`, `k`, `l` and arrow keys.
-- Intuitive splits with `|` and `-`, opened in the current directory.
+- Intuitive splits with `|` and `-`, and new windows with `c`, all opened in the
+  current directory.
+- Repeatable pane resizing with `prefix H/J/K/L`.
+- Pane borders show the pane index and title.
 - Project sessionizer with `prefix f`: a fuzzy picker (`fzf` + `fd`) over
   `~/workspace`, `~/github`, and `~/crissis16` that creates or switches to a
   tmux session for the selected project. Override the roots with
   `TMUX_SESSIONIZER_DIRS`.
 - Windows and panes are numbered from `1` (`base-index 1`).
-- Plugins: `tpm`, `tmux-sensible`, `vim-tmux-navigator`, `tmux-yank`, `tmux-resurrect`, and `tmux-continuum`.
+- Plugins (TPM lives in `~/.config/tmux/plugins`): `tmux-sensible`,
+  `vim-tmux-navigator`, `tmux-yank`, `tmux-resurrect`, `tmux-continuum`,
+  `tmux-fzf`, and `tmux-open`.
 
 #### Session persistence
 
@@ -328,6 +349,7 @@ General:
 | `prefix :` | Command prompt, e.g. `:new-session -s work` or `:kill-session`. |
 | `prefix ?` | List every key binding. |
 | `prefix f` | Pick a project and create/switch to its tmux session. |
+| `prefix F` | Search and manage sessions/windows/panes with `tmux-fzf`. |
 | `prefix r` | Reload `tmux.conf`. |
 | `prefix I` / `prefix U` | Install / update TPM plugins. |
 | `prefix C-s` / `prefix C-r` | Save / restore the session environment now. |
@@ -357,6 +379,7 @@ Panes:
 | `prefix q` | Show pane numbers. |
 | `prefix x` | Close the current pane. |
 | `prefix {` / `prefix }` | Move the pane left / right. |
+| `prefix H` / `J` / `K` / `L` | Resize the pane left / down / up / right (repeatable). |
 | `prefix Space` | Cycle through pane layouts. |
 
 Copy mode (Vim keys):
@@ -367,14 +390,28 @@ Copy mode (Vim keys):
 | `v` | Start selection. |
 | `C-v` | Toggle rectangular selection. |
 | `y` | Copy selection to the system clipboard (`tmux-yank`). |
+| `o` / `C-o` | Open the selected path or URL with `xdg-open` / `$EDITOR` (`tmux-open`). |
 | `q` / `Esc` | Leave copy mode. |
 
 ### Alacritty and i3
 
-The bootstrap script links the Alacritty and i3 configurations and installs the i3bar Nerd Font, but it does not install the desktop packages. Install Alacritty, i3, i3status, dmenu, i3lock, xss-lock, and the NetworkManager applet separately if you use those configs.
+The bootstrap installs the minimal i3 stack (i3, i3status, i3lock, xss-lock,
+rofi, maim, brightnessctl, playerctl, and dex), builds Alacritty from source,
+and links the Alacritty, i3, and i3status configurations. The NetworkManager
+applet is started only when `nm-applet` is already installed.
 
-- **Alacritty**: Sweetie Light theme, AdwaitaMono Nerd Font Mono, 160x80 initial window, clipboard shortcuts, and 100,000-line scrollback. The configuration uses the current file schema (`[general]` for `import` and `live_config_reload`), so it loads without the `alacritty migrate` warning on Alacritty 0.13 and newer.
-- **i3**: `Mod4` as the modifier key, dmenu launcher, standard workspace bindings, and a minimalist i3status bar with Wi-Fi, RAM, battery, and local date/time (Lima).
+Alacritty is built with Cargo from the pinned `ALACRITTY_VERSION` (default
+`0.17.0`) instead of Debian 12's old package. The bootstrap also installs the
+terminfo entry, the `.desktop` file, and the icon in `~/.local`.
+
+- **Alacritty** is the primary terminal: Sweetie Light theme, AdwaitaMono Nerd
+  Font Mono, 4 px padding, 0.97 opacity, 160x80 initial window, Vi mode,
+  OSC 52 copy support, clipboard shortcuts, and 100,000-line scrollback. Bold,
+  italic, and bold-italic faces use the same Nerd Font.
+- **i3** keeps the `Mod4` modifier and standard workspace bindings, adds small
+  gaps, a scratchpad, rofi, screenshots, screen locking, brightness/media keys,
+  and a lightweight i3status bar with Wi-Fi, CPU, RAM, disk, battery, and local
+  date/time (Lima).
 
 To install the bar font manually (the bootstrap script does this automatically):
 
@@ -398,9 +435,12 @@ Applications and session:
 
 | Keys | Action |
 | --- | --- |
-| `Mod+Return` | Open a terminal (`i3-sensible-terminal`). |
-| `Mod+d` | Open the `dmenu_run` launcher. |
+| `Mod+Return` | Open Alacritty (falls back to `i3-sensible-terminal`). |
+| `Mod+d` | Open the rofi application launcher. |
 | `Mod+Shift+q` | Kill the focused window. |
+| `Mod+Shift+x` | Lock the screen. |
+| `Print` / `Mod+Print` | Screenshot a region / the whole screen to the clipboard. |
+| `Mod+minus` / `Mod+Shift+minus` | Show / move the focused window to the scratchpad. |
 | `Mod+Shift+c` | Reload the i3 configuration. |
 | `Mod+Shift+r` | Restart i3 in place (keeps layout/session). |
 | `Mod+Shift+e` | Exit i3 / log out (asks for confirmation). |
@@ -453,8 +493,10 @@ Media keys:
 | `XF86AudioRaiseVolume` / `LowerVolume` | Volume up / down by 10% (`pactl`). |
 | `XF86AudioMute` | Mute / unmute the default sink. |
 | `XF86AudioMicMute` | Mute / unmute the default source. |
+| `XF86AudioPlay` / `Next` / `Prev` | Play-pause / next / previous track (`playerctl`). |
+| `XF86MonBrightnessUp` / `Down` | Brightness up / down by 5% (`brightnessctl`). |
 
-i3bar runs `i3status` at the bottom, refreshed every 5 seconds. From left to right it shows Wi-Fi (ESSID, colored by signal quality), RAM usage, battery (icon by state, percentage, and time left), and the date/time in `America/Lima`. Volume keys send `SIGUSR1` to `i3status`, so the bar refreshes immediately even though it no longer displays the volume.
+i3bar runs `i3status` at the bottom, refreshed every 5 seconds. From left to right it shows Wi-Fi (ESSID, colored by signal quality), CPU usage, RAM usage, root disk availability, battery (icon by state, percentage, and time left), and the date/time in `America/Lima`. Volume keys send `SIGUSR1` to `i3status`, so the bar refreshes immediately even though it no longer displays the volume.
 
 ## Repository layout
 
@@ -462,11 +504,15 @@ i3bar runs `i3status` at the bottom, refreshed every 5 seconds. From left to rig
 .
 ├── bootstrap.sh       # Debian/Ubuntu, Fedora, and Arch provisioning script
 ├── nvim/              # Neovim configuration and lazy-lock.json
-├── fish/              # fish shell configuration and prompt functions
+├── zsh/               # Minimal zsh configuration
 ├── tmux/              # tmux configuration
+├── git/               # Shared Git configuration and global ignore rules
+├── lazygit/           # lazygit configuration
 ├── alacritty/         # Alacritty configuration and themes
+├── ghostty/           # Ghostty configuration
 ├── i3/                # i3 window manager configuration
-└── i3status/          # i3status bar configuration
+├── i3status/          # i3status bar configuration
+└── scripts/           # tmux-sessionizer and clipboard helpers
 ```
 
 ## Maintenance
@@ -482,8 +528,8 @@ i3bar runs `i3status` at the bottom, refreshed every 5 seconds. From left to rig
 - [ ] Add container-based CI for `bootstrap.sh` across Debian 12, Ubuntu 24.04, Fedora, and Arch, on `x86_64` and `arm64`.
 - [ ] Add ShellCheck and Lua formatting/linting checks to CI.
 - [ ] Add install profiles such as `minimal`, `desktop`, and `full`, plus a `--skip-toolchains` option for faster tests.
-- [ ] Install a Nerd Font and optional desktop packages (Alacritty, i3, i3status, dmenu, i3lock) behind an opt-in flag.
-- [ ] Add debug adapters for C/C++/Rust (`codelldb` or `gdb`) and Go (`delve`).
+- [ ] Add a `--skip-desktop` flag for headless machines that should not install Alacritty and the i3 stack.
+- [ ] Add debug adapters and configurations for C/C++ and Rust (`codelldb` or `gdb`) if those workflows grow.
 - [ ] Evaluate Neovim 0.11+ and update pinned plugins when `gitsigns.nvim` and the LSP setup are compatible.
 - [ ] Add backup and rollback support for existing configuration files.
 - [x] Extend support to Fedora and Arch Linux.
