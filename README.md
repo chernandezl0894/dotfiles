@@ -160,6 +160,7 @@ color previews.
 | `grug-far.nvim`, `nvim-surround` | Project-wide search/replace and surround editing. |
 | `nvim-ts-autotag`, `nvim-autopairs`, `nvim-colorizer.lua` | HTML/JSX tag handling, bracket pairs, and CSS color previews. |
 | `render-markdown.nvim`, `todo-comments.nvim`, `rainbow-delimiters.nvim` | Markdown rendering, TODO search, and delimiter colors. |
+| `minuet-ai.nvim` | Manual AI completion with Ollama or a cloud API. |
 | `conform.nvim` | Format-on-save and manual formatting. |
 | `nvim-lint` | Linting for JavaScript, TypeScript, CSS, SCSS, and Less. |
 | `nvim-dap`, `nvim-dap-ui`, `nvim-dap-virtual-text`, `mason-nvim-dap` | Debug Adapter Protocol UI, inline values, and Python debugging. |
@@ -190,6 +191,8 @@ The leader key is `Space`.
 | `<leader>sr` | Search and replace in the project. |
 | `<C-p>` | Search Git files. |
 | `s` / `S` | Flash jump / Flash Treesitter. |
+| `<A-]>` / `<A-[>` | Request/cycle AI completion with Minuet (manual only). |
+| `<A-a>` / `<A-A>` / `<A-w>` / `<A-e>` | Accept line / all / next word / dismiss AI completion. |
 | `<leader>xx` / `<leader>xX` / `<leader>xs` / `<leader>xr` / `<leader>xl` / `<leader>xq` | Trouble: diagnostics / buffer diagnostics / symbols / references / location list / quickfix. |
 | `<leader>Ha` / `<leader>Hm` / `<leader>H1`…`<leader>H4` | Harpoon: add file / menu / jump to file. |
 | `<leader>qs` / `<leader>ql` / `<leader>qd` | Restore session / restore last session / don't save session. |
@@ -219,6 +222,31 @@ The leader key is `Space`.
 | `<leader>gg` | Open lazygit in a floating terminal at the repository root. |
 | `<leader>m` / `<leader>mc` / `<leader>mr` | Run `make` / `make clean` / `make run`. |
 | `<leader>1` | Reload Neovim config and open Mason. |
+
+#### AI completion
+
+Minuet is configured for **manual** completion only: it does not send requests
+while typing. Press `<A-]>` to request or cycle a suggestion and `<A-a>` to
+accept one line. `<A-A>` accepts the whole suggestion, `<A-w>` the next word,
+and `<A-e>` dismisses it.
+
+The default provider is local Ollama with `qwen2.5-coder:1.5b`. To use
+DeepSeek, export the key before starting Neovim:
+
+```bash
+export DEEPSEEK_API_KEY=...
+MINUET_PRESET=deepseek nvim
+```
+
+Or switch at runtime to the predefined DeepSeek preset:
+
+```vim
+:Minuet change_preset deepseek
+```
+
+Return to the local model with `:Minuet change_preset local`. Optional
+overrides: `MINUET_OLLAMA_MODEL`, `MINUET_OLLAMA_ENDPOINT`,
+`MINUET_DEEPSEEK_MODEL`, and `MINUET_DEEPSEEK_ENDPOINT`.
 
 ### git
 
