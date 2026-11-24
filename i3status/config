@@ -9,7 +9,9 @@ general {
 }
 
 order += "wireless _first_"
+order += "cpu_usage"
 order += "memory"
+order += "disk /"
 order += "battery 0"
 order += "tztime lima"
 
@@ -18,10 +20,18 @@ wireless _first_ {
         format_down = " off"
 }
 
+cpu_usage {
+        format = "CPU %usage"
+}
+
 memory {
         format = " %percentage_used"
         threshold_degraded = 20%
         threshold_critical = 10%
+}
+
+disk "/" {
+        format = " %avail"
 }
 
 battery 0 {
