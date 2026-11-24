@@ -1,0 +1,64 @@
+# Minimal zsh configuration managed by the dotfiles repository.
+
+# History
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE=20000
+SAVEHIST=20000
+setopt HIST_IGNORE_ALL_DUPS HIST_REDUCE_BLANKS SHARE_HISTORY INC_APPEND_HISTORY
+
+# Shell behavior
+setopt AUTO_CD INTERACTIVE_COMMENTS PROMPT_SUBST
+bindkey -e
+
+# Completion
+autoload -Uz compinit
+compinit -i
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
+
+# PATH: tools installed by bootstrap and common user toolchains.
+export PATH="$HOME/.local/bin:$HOME/go/bin:$HOME/.cargo/bin:$PATH"
+[ -d "$HOME/.opencode/bin" ] && export PATH="$HOME/.opencode/bin:$PATH"
+[ -d "$HOME/.bun/bin" ] && export PATH="$HOME/.bun/bin:$PATH"
+[ -d "$HOME/.volta/bin" ] && export PATH="$HOME/.volta/bin:$PATH"
+if [ -d "$HOME/.local/share/pnpm" ]; then
+  export PNPM_HOME="$HOME/.local/share/pnpm"
+  export PATH="$PNPM_HOME:$PATH"
+fi
+
+# Editor
+export EDITOR="${EDITOR:-nvim}"
+export VISUAL="${VISUAL:-nvim}"
+export PAGER="${PAGER:-less}"
+
+# Optional toolchains and integrations.
+if command -v pyenv >/dev/null 2>&1; then
+  eval "$(pyenv init -)"
+  eval "$(pyenv virtualenv-init -)" 2>/dev/null || true
+fi
+[ -s "$HOME/.nvm/nvm.sh" ] && source "$HOME/.nvm/nvm.sh"
+command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh)"
+command -v direnv >/dev/null 2>&1 && eval "$(direnv hook zsh)"
+
+# Prompt: path and git branch on the first line, marker on the second.
+autoload -Uz vcs_info
+precmd() { vcs_info }
+zstyle ':vcs_info:git:*' formats ' %F{magenta}(%b)%f'
+zstyle ':vcs_info:git:*' actionformats ' %F{magenta}(%b|%a)%f'
+PROMPT='%F{blue}%~%f${vcs_info_msg_0_}
+%F{green}❯%f '
+
+# Aliases
+alias ll='ls -lah'
+alias la='ls -lah'
+alias gs='git status -sb'
+alias gd='git diff'
+alias gl='git log --oneline --graph --decorate -20'
+alias ga='git add'
+alias gc='git commit'
+alias tm='tmux new -A -s main'
+alias ta='tmux attach'
+alias reload='source ~/.zshrc'
+
+# Machine-specific overrides.
+[ -f "$HOME/.zshrc.local" ] && source "$HOME/.zshrc.local"
