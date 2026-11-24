@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+# Jump to a project in tmux, creating the session if it does not exist.
+#
+# Usage:
+#   tmux-sessionizer          Pick a project with fzf and attach/switch to it.
+#   tmux-sessionizer --list   Print the candidate directories.
+#
+# Configure the roots with TMUX_SESSIONIZER_DIRS (space separated) if needed.
+
+set -euo pipefail
+
+roots=()
+if [ -n "${TMUX_SESSIONIZER_DIRS:-}" ]; then
+  read -r -a roots <<<"$TMUX_SESSIONIZER_DIRS"
+else
+  for dir in "$HOME/workspace" "$HOME/github" "$HOME/crissis16"; do
+    [ -d "$dir" ] && roots+=("$dir")
+  done
+fi
+
+if [ ${#roots[@]} -eq 0 ]; then
+  echo "No project directories found. Set TMUX_SESSIONIZER_DIRS." >&2
+  exit 1
+fi
+
+fd_bin=$(command -v fd || command -v fdfind || true)
+if [ -z "$fd_bin" ]; then
+  echo "fd (or fdfind) is required." >&2
+  exit 1
+fi
+
+markers=(.git pyproject.toml package.json Makefile Cargo.toml go.mod composer.json requirements.txt setup.py uv.lock Gemfile)
+
+list_projects() {
+  "$fd_bin" \
+    --type d \
+    --max-depth 4 \
+    --exclude .git \
+    --exclude node_modules \
+    --exclude .venv \
+    --exclude venv \
+    --exclude vendor \
+    --exclude dist \
+    --exclude build \
+    --exclude __pycache__ \
+    . "${roots[@]}" 2>/dev/null |
+    while IFS= read -r dir; do
+      for marker in "${markers[@]}"; do
+        if [ -e "$dir/$marker" ]; then
+          printf '%s\n' "${dir%/}"
+          break
+        fi
+      done
+    done |
+    sort -u
+}
+
+dry_run=false
+case "${1:-}" in
+  --list)
+    list_projects
+    exit 0
+    ;;
+  --dry-run)
+    dry_run=true
+    ;;
+esac
+
+selected=$(list_projects | fzf --prompt="Project > " --height=100% --reverse --border --exit-0) || exit 0
+[ -n "$selected" ] || exit 0
+
+# tmux does not accept "." or ":" in session names.
+session_name=$(basename "$selected" | tr ' .:' '___')
+
+# Reuse the session name only when it points to the same project.
+existing=$(tmux display-message -p -t "=$session_name" '#{@project_path}' 2>/dev/null || true)
+if [ -n "$existing" ] && [ "$existing" != "$selected" ]; then
+  session_name="$(basename "$(dirname "$selected")")-$session_name"
+fi
+
+if [ "$dry_run" = true ]; then
+  printf 'project=%s\nsession=%s\n' "$selected" "$session_name"
+  exit 0
+fi
+
+if ! tmux has-session -t "=$session_name" 2>/dev/null; then
+  tmux new-session -d -s "$session_name" -c "$selected"
+fi
+
+tmux set-option -t "=$session_name" @project_path "$selected"
+
+if [ -n "${TMUX:-}" ]; then
+  tmux switch-client -t "=$session_name"
+else
+  tmux attach-session -t "=$session_name"
+fi
