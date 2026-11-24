@@ -19,7 +19,7 @@
 #   -h, --help            Show this help
 #
 # Environment overrides:
-#   NVIM_VERSION, GO_VERSION, ZIG_VERSION, ODIN_TAG
+#   NVIM_VERSION, GO_VERSION, ZIG_VERSION, ODIN_TAG, LAZYGIT_VERSION
 #
 set -euo pipefail
 
@@ -29,6 +29,7 @@ NVIM_VERSION="${NVIM_VERSION:-0.10.4}"
 ZIG_VERSION="${ZIG_VERSION:-0.16.0}"
 GO_VERSION="${GO_VERSION:-}"
 ODIN_TAG="${ODIN_TAG:-}"
+LAZYGIT_VERSION="${LAZYGIT_VERSION:-0.66.4}"
 
 SKIP_MASON=0
 SKIP_DOTFILES=0
@@ -202,7 +203,7 @@ install_os_packages() {
         unzip zip tar xz-utils \
         build-essential cmake pkg-config make \
         clang lld gdb \
-        ripgrep fd-find \
+        ripgrep fd-find fzf \
         python3 python3-pip python3-venv \
         fish tmux xclip wl-clipboard openssh-client less
 
@@ -218,7 +219,7 @@ install_os_packages() {
         unzip zip tar xz \
         gcc gcc-c++ make cmake pkgconf-pkg-config \
         clang lld gdb \
-        ripgrep fd-find \
+        ripgrep fd-find fzf \
         python3 python3-pip \
         fish tmux xclip wl-clipboard openssh-clients less
       ;;
@@ -231,7 +232,7 @@ install_os_packages() {
         unzip zip tar xz \
         gcc make cmake pkgconf \
         clang lld gdb \
-        ripgrep fd \
+        ripgrep fd fzf \
         python python-pip \
         fish tmux xclip wl-clipboard openssh less
       ;;
@@ -341,6 +342,18 @@ install_go() {
 
   run ln -sf "$dest/bin/go" "$BIN_DIR/go"
   run ln -sf "$dest/bin/gofmt" "$BIN_DIR/gofmt"
+}
+
+install_lazygit() {
+  if [ -x "$BIN_DIR/lazygit" ]; then
+    log "lazygit already installed"
+    return
+  fi
+
+  log "Installing lazygit $LAZYGIT_VERSION"
+  if ! run env GOBIN="$BIN_DIR" "$BIN_DIR/go" install "github.com/jesseduffield/lazygit@v${LAZYGIT_VERSION}"; then
+    warn "Could not install lazygit; run: GOBIN=$BIN_DIR go install github.com/jesseduffield/lazygit@v${LAZYGIT_VERSION}"
+  fi
 }
 
 install_rust() {
@@ -480,10 +493,18 @@ link_dotfiles() {
     alacritty/themes/dreamsof.toml \
     alacritty/themes/sweetie_light.toml \
     alacritty/themes/sweetie_dark.toml \
+    ghostty/config \
+    git/config \
+    git/ignore \
+    lazygit/config.yml \
     i3/config \
     i3status/config; do
     link_file "$DOTFILES_DIR/$relative" "$HOME/.config/$relative"
   done
+
+  # tmux reads ~/.tmux.conf on older versions; keep both paths in sync.
+  link_file "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.tmux.conf"
+  link_file "$DOTFILES_DIR/scripts/tmux-sessionizer" "$BIN_DIR/tmux-sessionizer"
 }
 
 install_fonts() {
@@ -750,6 +771,7 @@ install_os_packages
 install_node
 install_neovim
 install_go
+install_lazygit
 install_rust
 install_zig
 install_odin
@@ -772,7 +794,7 @@ if [ "$SET_FISH_SHELL" -eq 0 ] && command -v fish >/dev/null 2>&1; then
   printf 'or start a fish session with: fish\n'
 fi
 printf '\nInstalled versions:\n'
-for bin in nvim go rustc cargo zig odin tmux node fish; do
+for bin in nvim go rustc cargo zig odin tmux node fish lazygit; do
   if command -v "$bin" >/dev/null 2>&1; then
     case "$bin" in
       nvim) printf '  %-8s %s\n' "$bin" "$("$bin" --version 2>/dev/null | head -n1)" ;;
@@ -781,6 +803,7 @@ for bin in nvim go rustc cargo zig odin tmux node fish; do
       zig) printf '  %-8s %s\n' "$bin" "$("$bin" version 2>/dev/null)" ;;
       odin) printf '  %-8s %s\n' "$bin" "$("$bin" version 2>/dev/null | head -n1)" ;;
       tmux|node|fish) printf '  %-8s %s\n' "$bin" "$("$bin" -V 2>/dev/null || "$bin" --version 2>/dev/null)" ;;
+      lazygit) printf '  %-8s %s\n' "$bin" "$("$bin" --version 2>/dev/null | sed -n 's/.*, version=\([0-9][^,]*\).*/\1/p')" ;;
     esac
   fi
 done
