@@ -2,8 +2,9 @@
 #
 # Bootstrap a Debian/Ubuntu, Fedora, or Arch Linux machine for this dotfiles repo.
 #
-# Installs the OS packages, language toolchains, Neovim, tmux, and the
-# Mason-managed LSPs/formatters/debug adapters used by the Neovim config.
+# Installs the OS packages, language toolchains, Neovim, zsh, tmux, the
+# minimal i3 desktop, and the Mason-managed LSPs/formatters/debug adapters
+# used by the Neovim config.
 #
 # Usage:
 #   ./bootstrap.sh [options]
@@ -13,13 +14,13 @@
 #   --skip-dotfiles       Do not link dotfiles (assume config is already linked)
 #   --skip-tmux-plugins   Do not install TPM plugins
 #   --skip-fonts          Do not install the i3bar Nerd Font
-#   --set-fish-shell      Set fish as the login shell for the current user
+#   --set-zsh-shell       Set zsh as the login shell for the current user
 #   --nvim-version VER    Neovim version to install (default: 0.10.4)
 #   --dry-run             Print what would be done without changing anything
 #   -h, --help            Show this help
 #
 # Environment overrides:
-#   NVIM_VERSION, GO_VERSION, ZIG_VERSION, ODIN_TAG, LAZYGIT_VERSION
+#   NVIM_VERSION, GO_VERSION, ZIG_VERSION, ODIN_TAG, LAZYGIT_VERSION, ALACRITTY_VERSION
 #
 set -euo pipefail
 
@@ -30,12 +31,13 @@ ZIG_VERSION="${ZIG_VERSION:-0.16.0}"
 GO_VERSION="${GO_VERSION:-}"
 ODIN_TAG="${ODIN_TAG:-}"
 LAZYGIT_VERSION="${LAZYGIT_VERSION:-0.66.4}"
+ALACRITTY_VERSION="${ALACRITTY_VERSION:-0.17.0}"
 
 SKIP_MASON=0
 SKIP_DOTFILES=0
 SKIP_TMUX_PLUGINS=0
 SKIP_FONTS=0
-SET_FISH_SHELL=0
+SET_ZSH_SHELL=0
 DRY_RUN=0
 
 # i3bar font. Keep the release and checksum in sync.
@@ -94,8 +96,8 @@ while [ "$#" -gt 0 ]; do
     --skip-fonts)
       SKIP_FONTS=1
       ;;
-    --set-fish-shell)
-      SET_FISH_SHELL=1
+    --set-zsh-shell)
+      SET_ZSH_SHELL=1
       ;;
     --nvim-version)
       [ "$#" -ge 2 ] || die "--nvim-version requires a value"
@@ -182,7 +184,7 @@ if [ "$DRY_RUN" -eq 0 ] && [ "${#SUDO[@]}" -gt 0 ]; then
 fi
 
 if [ "$DRY_RUN" -eq 0 ]; then
-  mkdir -p "$BIN_DIR" "$OPT_DIR" "$HOME/.tmux/plugins"
+  mkdir -p "$BIN_DIR" "$OPT_DIR" "$HOME/.config/tmux/plugins"
 fi
 
 export PATH="$BIN_DIR:$CARGO_BIN:$HOME/go/bin:$PATH"
@@ -193,7 +195,6 @@ hash -r
 # ---------------------------------------------------------------------------
 
 install_os_packages() {
-  # PHP is intentionally excluded; it is handled in a different editor.
   case "$DISTRO_FAMILY" in
     debian)
       log "Installing OS packages (apt)"
@@ -203,9 +204,12 @@ install_os_packages() {
         unzip zip tar xz-utils \
         build-essential cmake pkg-config make \
         clang lld gdb \
+        libfontconfig1-dev libfreetype6-dev libxcb1-dev libxkbcommon-dev libwayland-dev \
         ripgrep fd-find fzf \
         python3 python3-pip python3-venv \
-        fish tmux xclip wl-clipboard openssh-client less
+        zsh tmux xclip wl-clipboard openssh-client less \
+        i3 i3status i3lock xss-lock rofi maim brightnessctl playerctl dex \
+        zoxide direnv
 
       # Debian/Ubuntu install fd as "fdfind".
       if [ -x /usr/bin/fdfind ]; then
@@ -219,9 +223,12 @@ install_os_packages() {
         unzip zip tar xz \
         gcc gcc-c++ make cmake pkgconf-pkg-config \
         clang lld gdb \
+        fontconfig-devel freetype-devel libxcb-devel libxkbcommon-devel wayland-devel \
         ripgrep fd-find fzf \
         python3 python3-pip \
-        fish tmux xclip wl-clipboard openssh-clients less
+        zsh tmux xclip wl-clipboard openssh-clients less \
+        i3 i3status i3lock xss-lock rofi maim brightnessctl playerctl dex-autostart \
+        zoxide direnv
       ;;
     arch)
       # No -Sy to avoid partial upgrades; refresh the database with -Syu yourself
@@ -232,9 +239,12 @@ install_os_packages() {
         unzip zip tar xz \
         gcc make cmake pkgconf \
         clang lld gdb \
+        fontconfig freetype2 libxcb libxkbcommon wayland \
         ripgrep fd fzf \
         python python-pip \
-        fish tmux xclip wl-clipboard openssh less
+        zsh tmux xclip wl-clipboard openssh less \
+        i3-wm i3status i3lock xss-lock rofi maim brightnessctl playerctl dex \
+        zoxide direnv
       ;;
   esac
 }
@@ -381,6 +391,45 @@ install_rust() {
   done
 }
 
+install_alacritty() {
+  local binary="$BIN_DIR/alacritty"
+  if [ -x "$binary" ] && "$binary" --version 2>/dev/null | grep -q " $ALACRITTY_VERSION "; then
+    log "Alacritty $ALACRITTY_VERSION already installed"
+  else
+    log "Installing Alacritty $ALACRITTY_VERSION"
+    if ! run "$CARGO_BIN/cargo" install \
+      --git https://github.com/alacritty/alacritty \
+      --tag "v$ALACRITTY_VERSION" \
+      --locked \
+      --root "$HOME/.local" \
+      --no-default-features \
+      --features x11 \
+      alacritty; then
+      warn "Could not install Alacritty; install it manually with the same cargo command."
+      return
+    fi
+  fi
+
+  local base="https://github.com/alacritty/alacritty/releases/download/v${ALACRITTY_VERSION}"
+  if command -v tic >/dev/null 2>&1; then
+    if run curl -fsSL -o "$TMP_DIR/alacritty.info" "$base/alacritty.info"; then
+      run mkdir -p "$HOME/.terminfo"
+      run tic -x -o "$HOME/.terminfo" "$TMP_DIR/alacritty.info"
+    fi
+  else
+    warn "tic not found; install ncurses-bin for the Alacritty terminfo entry."
+  fi
+
+  if run curl -fsSL -o "$TMP_DIR/Alacritty.desktop" "$base/Alacritty.desktop"; then
+    run mkdir -p "$HOME/.local/share/applications"
+    run cp "$TMP_DIR/Alacritty.desktop" "$HOME/.local/share/applications/Alacritty.desktop"
+  fi
+  if run curl -fsSL -o "$TMP_DIR/Alacritty.svg" "$base/Alacritty.svg"; then
+    run mkdir -p "$HOME/.local/share/icons/hicolor/scalable/apps"
+    run cp "$TMP_DIR/Alacritty.svg" "$HOME/.local/share/icons/hicolor/scalable/apps/Alacritty.svg"
+  fi
+}
+
 install_zig() {
   local dest="$OPT_DIR/zig-$ZIG_VERSION"
   if [ -x "$dest/zig" ] && "$dest/zig" version 2>/dev/null | grep -qx "$ZIG_VERSION"; then
@@ -482,10 +531,6 @@ link_dotfiles() {
   for relative in \
     tmux/tmux.conf \
     nvim \
-    fish/config.fish \
-    fish/functions/fish_prompt.fish \
-    fish/functions/__fish_prompt_pwd.fish \
-    fish/functions/__fish_prompt_git.fish \
     alacritty/alacritty.toml \
     alacritty/themes/catppuccin-frappe.toml \
     alacritty/themes/catppuccin-mocha.toml \
@@ -505,6 +550,7 @@ link_dotfiles() {
   # tmux reads ~/.tmux.conf on older versions; keep both paths in sync.
   link_file "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.tmux.conf"
   link_file "$DOTFILES_DIR/scripts/tmux-sessionizer" "$BIN_DIR/tmux-sessionizer"
+  link_file "$DOTFILES_DIR/zsh/zshrc" "$HOME/.zshrc"
 }
 
 install_fonts() {
@@ -549,53 +595,53 @@ install_fonts() {
 }
 
 configure_login_shell() {
-  if [ "$SET_FISH_SHELL" -eq 0 ]; then
-    log "Keeping the current login shell (use --set-fish-shell to change it)"
+  if [ "$SET_ZSH_SHELL" -eq 0 ]; then
+    log "Keeping the current login shell (use --set-zsh-shell to change it)"
     return
   fi
 
-  local fish_bin
-  fish_bin="$(command -v fish 2>/dev/null || true)"
-  if [ -z "$fish_bin" ]; then
-    warn "fish is not installed; cannot change the login shell."
+  local zsh_bin
+  zsh_bin="$(command -v zsh 2>/dev/null || true)"
+  if [ -z "$zsh_bin" ]; then
+    warn "zsh is not installed; cannot change the login shell."
     return
   fi
 
   local current_shell
   current_shell="$(getent passwd "$(id -un)" 2>/dev/null | cut -d: -f7)"
-  if [ "$(basename "${current_shell:-}")" = fish ]; then
-    log "fish is already the login shell"
+  if [ "$(basename "${current_shell:-}")" = zsh ]; then
+    log "zsh is already the login shell"
     return
   fi
 
   # Prefer the path registered in /etc/shells. Fedora also ships a copy at
-  # /usr/sbin/fish (which PATH finds first) but only lists /usr/bin/fish.
+  # /usr/sbin/zsh (which PATH finds first) but only lists /usr/bin/zsh.
   if [ -r /etc/shells ]; then
     local shell
     while IFS= read -r shell; do
       case "$shell" in
         '' | \#*) continue ;;
       esac
-      if [ "$(basename "$shell")" = fish ] && [ -x "$shell" ]; then
-        fish_bin="$shell"
+      if [ "$(basename "$shell")" = zsh ] && [ -x "$shell" ]; then
+        zsh_bin="$shell"
         break
       fi
     done </etc/shells
   fi
 
-  if [ -r /etc/shells ] && ! grep -Fxq "$fish_bin" /etc/shells; then
-    warn "$fish_bin is not listed in /etc/shells; add it before changing the login shell."
+  if [ -r /etc/shells ] && ! grep -Fxq "$zsh_bin" /etc/shells; then
+    warn "$zsh_bin is not listed in /etc/shells; add it before changing the login shell."
     return
   fi
 
-  log "Setting fish as the login shell"
-  if ! run chsh -s "$fish_bin"; then
-    warn "Could not change the login shell; run 'chsh -s $fish_bin' manually."
+  log "Setting zsh as the login shell"
+  if ! run chsh -s "$zsh_bin"; then
+    warn "Could not change the login shell; run 'chsh -s $zsh_bin' manually."
   fi
 }
 
 install_tmux_plugins() {
-  local tpm="$HOME/.tmux/plugins/tpm"
+  local tpm="$HOME/.config/tmux/plugins/tpm"
 
   if [ "$SKIP_TMUX_PLUGINS" -eq 1 ]; then
     log "Skipping TPM plugin installation (--skip-tmux-plugins)"
@@ -773,6 +819,7 @@ install_neovim
 install_go
 install_lazygit
 install_rust
+install_alacritty
 install_zig
 install_odin
 
@@ -789,12 +836,14 @@ hash -r
 if [ "$DRY_RUN" -eq 0 ] && [ "$(command -v nvim 2>/dev/null)" != "$BIN_DIR/nvim" ]; then
   warn "nvim resolves to $(command -v nvim 2>/dev/null || echo 'nothing'); put $BIN_DIR before other PATH entries."
 fi
-if [ "$SET_FISH_SHELL" -eq 0 ] && command -v fish >/dev/null 2>&1; then
-  printf '\nfish is installed but not your login shell. Run %s --set-fish-shell to change it,\n' "$0"
-  printf 'or start a fish session with: fish\n'
+current_shell="$(getent passwd "$(id -un)" 2>/dev/null | cut -d: -f7)"
+if [ "$SET_ZSH_SHELL" -eq 0 ] && command -v zsh >/dev/null 2>&1 &&
+  [ "$(basename "${current_shell:-}")" != zsh ]; then
+  printf '\nzsh is installed but not your login shell. Run %s --set-zsh-shell to change it,\n' "$0"
+  printf 'or start a zsh session with: zsh\n'
 fi
 printf '\nInstalled versions:\n'
-for bin in nvim go rustc cargo zig odin tmux node fish lazygit; do
+for bin in nvim go rustc cargo zig odin tmux node zsh alacritty lazygit; do
   if command -v "$bin" >/dev/null 2>&1; then
     case "$bin" in
       nvim) printf '  %-8s %s\n' "$bin" "$("$bin" --version 2>/dev/null | head -n1)" ;;
@@ -802,7 +851,9 @@ for bin in nvim go rustc cargo zig odin tmux node fish lazygit; do
       rustc|cargo) printf '  %-8s %s\n' "$bin" "$("$bin" --version 2>/dev/null)" ;;
       zig) printf '  %-8s %s\n' "$bin" "$("$bin" version 2>/dev/null)" ;;
       odin) printf '  %-8s %s\n' "$bin" "$("$bin" version 2>/dev/null | head -n1)" ;;
-      tmux|node|fish) printf '  %-8s %s\n' "$bin" "$("$bin" -V 2>/dev/null || "$bin" --version 2>/dev/null)" ;;
+      tmux|node) printf '  %-8s %s\n' "$bin" "$("$bin" -V 2>/dev/null || "$bin" --version 2>/dev/null)" ;;
+      zsh) printf '  %-8s %s\n' "$bin" "$("$bin" --version 2>/dev/null)" ;;
+      alacritty) printf '  %-8s %s\n' "$bin" "$("$bin" --version 2>/dev/null | head -n1)" ;;
       lazygit) printf '  %-8s %s\n' "$bin" "$("$bin" --version 2>/dev/null | sed -n 's/.*, version=\([0-9][^,]*\).*/\1/p')" ;;
     esac
   fi
