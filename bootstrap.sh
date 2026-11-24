@@ -202,7 +202,7 @@ install_os_packages() {
       run "${SUDO[@]}" env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         git curl wget ca-certificates gnupg lsb-release \
         unzip zip tar xz-utils \
-        build-essential cmake pkg-config make \
+        build-essential cmake pkg-config make ncurses-bin \
         clang lld gdb \
         libfontconfig1-dev libfreetype6-dev libxcb1-dev libxkbcommon-dev libwayland-dev \
         ripgrep fd-find fzf \
@@ -221,7 +221,7 @@ install_os_packages() {
       run "${SUDO[@]}" dnf install -y \
         git curl wget ca-certificates gnupg2 \
         unzip zip tar xz \
-        gcc gcc-c++ make cmake pkgconf-pkg-config \
+        gcc gcc-c++ make cmake pkgconf-pkg-config ncurses \
         clang lld gdb \
         fontconfig-devel freetype-devel libxcb-devel libxkbcommon-devel wayland-devel \
         ripgrep fd-find fzf \
@@ -237,7 +237,7 @@ install_os_packages() {
       run "${SUDO[@]}" pacman -S --needed --noconfirm \
         git curl wget ca-certificates gnupg \
         unzip zip tar xz \
-        gcc make cmake pkgconf \
+        gcc make cmake pkgconf ncurses \
         clang lld gdb \
         fontconfig freetype2 libxcb libxkbcommon wayland \
         ripgrep fd fzf \

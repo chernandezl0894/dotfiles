@@ -91,7 +91,7 @@ The bootstrap installs the following system packages, toolchains, and Neovim dep
 The bootstrap installs:
 
 - Build tools: `build-essential`, `cmake`, `pkg-config`, `make`, `clang`, `lld`, `gdb`
-- Build headers for Alacritty: `fontconfig`, `freetype`, `xcb`, `xkbcommon`, and `wayland` development packages
+- Build headers for Alacritty: `fontconfig`, `freetype`, `xcb`, `xkbcommon`, `wayland`, and `ncurses`/`tic`
 - Utilities: `git`, `curl`, `wget`, `unzip`, `zip`, `tar`, `xz-utils`, `ripgrep`, `fd-find`, `fzf`, `less`, `openssh-client`
 - Python: `python3`, `python3-pip`, `python3-venv`
 - Terminal: `zsh`, `tmux`, `xclip`, `wl-clipboard`
