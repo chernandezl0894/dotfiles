@@ -106,8 +106,12 @@ return {
 
         new_config.settings = new_config.settings or {}
         new_config.settings.python = new_config.settings.python or {}
-        new_config.settings.python.venvPath = venv_root
-        new_config.settings.python.venv = venv_name
+        -- Pyright ignores the `python.venv` client setting; it only honors
+        -- `pythonPath` (or venvPath/venv from a pyright config file).
+        local python = venv_root .. "/" .. venv_name .. "/bin/python"
+        if vim.fn.executable(python) == 1 then
+          new_config.settings.python.pythonPath = python
+        end
       end,
       settings = {
         python = {
