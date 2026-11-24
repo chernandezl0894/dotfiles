@@ -69,7 +69,7 @@ Open a new shell after the bootstrap finishes so the updated `PATH` is used.
 Environment overrides:
 
 ```bash
-NVIM_VERSION=0.10.4 GO_VERSION=1.27.2 ZIG_VERSION=0.16.0 ODIN_TAG=dev-2026-10 ./bootstrap.sh
+NVIM_VERSION=0.10.4 GO_VERSION=1.27.2 ZIG_VERSION=0.16.0 ODIN_TAG=dev-2026-10 LAZYGIT_VERSION=0.66.4 ./bootstrap.sh
 ```
 
 ### Re-link configuration
@@ -80,7 +80,7 @@ The bootstrap script is idempotent and always (re)creates the configuration syml
 ./bootstrap.sh --skip-mason --skip-tmux-plugins
 ```
 
-It links Neovim, fish, tmux, Alacritty, i3, and i3status into `~/.config`, replacing existing targets. It also installs the i3bar Nerd Font into `${XDG_DATA_HOME:-~/.local/share}/fonts` unless `--skip-fonts` is passed.
+It links Neovim, fish, tmux, Alacritty, Ghostty, Git, lazygit, i3, and i3status into `~/.config`, replacing existing targets. It also links `tmux-sessionizer` into `~/.local/bin` and `tmux/tmux.conf` into `~/.tmux.conf`, and installs the i3bar Nerd Font into `${XDG_DATA_HOME:-~/.local/share}/fonts` unless `--skip-fonts` is passed.
 
 ## Packages and libraries
 
@@ -91,7 +91,7 @@ The bootstrap installs the following system packages, toolchains, and Neovim dep
 The bootstrap installs:
 
 - Build tools: `build-essential`, `cmake`, `pkg-config`, `make`, `clang`, `lld`, `gdb`
-- Utilities: `git`, `curl`, `wget`, `unzip`, `zip`, `tar`, `xz-utils`, `ripgrep`, `fd-find`, `less`, `openssh-client`
+- Utilities: `git`, `curl`, `wget`, `unzip`, `zip`, `tar`, `xz-utils`, `ripgrep`, `fd-find`, `fzf`, `less`, `openssh-client`
 - Python: `python3`, `python3-pip`, `python3-venv`
 - Terminal: `fish`, `tmux`, `xclip`, `wl-clipboard`
 
@@ -151,8 +151,10 @@ Python projects are detected through `.venv`, `venv`, or `.virtualenv` directori
 | `nvim-lint` | Linting for JavaScript, TypeScript, CSS, SCSS, and Less. |
 | `nvim-dap`, `nvim-dap-ui`, `mason-nvim-dap` | Debug Adapter Protocol UI and Python debugging. |
 | `neotest`, `neotest-python` | Running and inspecting Python tests. |
-| `gitsigns.nvim`, `vim-fugitive` | Git hunks and Git commands. |
-| `toggleterm.nvim` | Integrated terminals and Makefile shortcuts. |
+| `gitsigns.nvim`, `vim-fugitive` | Git hunks, line blame, and Git commands. |
+| `toggleterm.nvim` | Integrated terminals, Makefile shortcuts, and a lazygit float. |
+| `vim-tmux-navigator` | Seamless navigation between Neovim splits and tmux panes. |
+| `which-key.nvim` | Keymap discovery with grouped leader menus. |
 | `lualine.nvim`, `nvim-web-devicons` | Statusline and file icons. |
 | `gruvbox` | Color scheme. |
 | `nvim-notify` | Notification UI. |
@@ -179,12 +181,46 @@ The leader key is `Space`.
 | `<leader>ts` | Run test suite. |
 | `<leader>td` | Debug nearest test. |
 | `<leader>tS` | Toggle test summary. |
-| `<F5>` / `<F10>` / `<F11>` / `<F12>` | Continue / step over / step into / step out. |
-| `<leader>b` | Toggle breakpoint. |
+| `<F5>` / `<F9>` / `<F10>` / `<F11>` / `<F12>` | Continue / toggle breakpoint / step over / into / out. |
+| `<leader>b` / `<leader>B` / `<leader>lp` | Toggle / conditional breakpoint, and log point. |
+| `<leader>du` / `<leader>de` / `<leader>dr` / `<leader>dt` / `<leader>dR` | Toggle DAP UI / evaluate / REPL / terminate / restart. |
 | `<leader>hs` / `<leader>hr` / `<leader>hp` / `<leader>hd` | Stage / reset / preview / diff Git hunks. |
+| `<leader>gB` / `<leader>gS` | Toggle line blame / stage the whole buffer. |
+| `<leader>gl` / `<leader>gL` / `<leader>gb` / `<leader>gz` | Git log / buffer log / branches / stashes. |
+| `<C-h>` / `<C-j>` / `<C-k>` / `<C-l>` | Move between Neovim splits and tmux panes. |
 | `<leader>` + backtick | Toggle terminal. |
+| `<leader>tt` / `<leader>th` / `<leader>tv` | Floating / horizontal / vertical terminal. |
+| `<leader>t1` … `<leader>t5` | Open terminal by number. |
+| `<leader>tN` / `<leader>tA` | New terminal / toggle all terminals. |
+| `<leader>t.` | Send the current line or selection to terminal 1. |
+| `<leader>gg` | Open lazygit in a floating terminal at the repository root. |
 | `<leader>m` / `<leader>mc` / `<leader>mr` | Run `make` / `make clean` / `make run`. |
 | `<leader>1` | Reload Neovim config and open Mason. |
+
+### git
+
+Git reads the shared settings from `git/config` (linked to
+`~/.config/git/config`), while the machine-specific identity and credentials
+stay in `~/.gitconfig`, which is not managed by this repository. The global
+ignore patterns live in `git/ignore` (linked to `~/.config/git/ignore`).
+
+- Rebase on pull, prune on fetch, auto-setup remotes, rerere, `zdiff3` conflict
+  markers, histogram diffs, moved-line detection, and verbose commits.
+- User aliases: `git st`, `co`, `sw`, `br`, `ci`, `last`, `lg`, `df`, `dc`,
+  `unstage`, and `amend`.
+- `core.editor` and the interactive-rebase editor are set to `nvim`.
+
+The bootstrap installs lazygit with Go (`LAZYGIT_VERSION`, default `0.66.4`)
+and links `lazygit/config.yml` to `~/.config/lazygit/config.yml`. To install or
+update it manually:
+
+```bash
+GOBIN="$HOME/.local/bin" go install github.com/jesseduffield/lazygit@v0.66.4
+```
+
+Press `<leader>gg` to open it in a floating terminal at the repository root.
+Files opened from lazygit with `e` open in the Neovim instance that launched it
+(`os.editPreset: nvim-remote`).
 
 ### fish
 
@@ -237,6 +273,10 @@ chsh -s "$(command -v fish)"   # log out and back in afterwards
 - Mouse support, 10,000-line history, and Vim-style copy mode.
 - Vim-style pane navigation with `h`, `j`, `k`, `l` and arrow keys.
 - Intuitive splits with `|` and `-`, opened in the current directory.
+- Project sessionizer with `prefix f`: a fuzzy picker (`fzf` + `fd`) over
+  `~/workspace`, `~/github`, and `~/crissis16` that creates or switches to a
+  tmux session for the selected project. Override the roots with
+  `TMUX_SESSIONIZER_DIRS`.
 - Windows and panes are numbered from `1` (`base-index 1`).
 - Plugins: `tpm`, `tmux-sensible`, `vim-tmux-navigator`, `tmux-yank`, `tmux-resurrect`, and `tmux-continuum`.
 
@@ -287,6 +327,7 @@ General:
 | `prefix (` / `prefix )` | Previous / next session. |
 | `prefix :` | Command prompt, e.g. `:new-session -s work` or `:kill-session`. |
 | `prefix ?` | List every key binding. |
+| `prefix f` | Pick a project and create/switch to its tmux session. |
 | `prefix r` | Reload `tmux.conf`. |
 | `prefix I` / `prefix U` | Install / update TPM plugins. |
 | `prefix C-s` / `prefix C-r` | Save / restore the session environment now. |
