@@ -1,0 +1,9 @@
+# Global Git ignore patterns.
+
+# Claude Code local settings.
+**/.claude/settings.local.json
+
+# Editor and OS noise.
+*.swp
+*.swo
+.DS_Store

@@ -3,6 +3,7 @@ return {
   tag = '0.1.8',
   dependencies = {
     'nvim-lua/plenary.nvim',
+    'nvim-tree/nvim-web-devicons',
   },
   config = function()
     local telescope = require "telescope"
@@ -23,7 +24,7 @@ return {
           'logs/',
           'storage/logs/',
         },
-        color_devicons = true,
+        color_devicons = vim.g.have_nerd_font,
         winblend = 0,
         layout_strategy = 'vertical',
         path_display = { 'absolute' },
@@ -86,6 +87,10 @@ return {
       })
     end, { desc = '[S]earch Current [W]ord' })
     map('n', '<Leader>sg', builtin.git_status, { desc = '[S]earch [G]it Status' })
+    map('n', '<Leader>gl', builtin.git_commits, { desc = '[G]it [L]og' })
+    map('n', '<Leader>gL', builtin.git_bcommits, { desc = '[G]it [B]uffer [L]og' })
+    map('n', '<Leader>gb', builtin.git_branches, { desc = '[G]it [B]ranches' })
+    map('n', '<Leader>gz', builtin.git_stash, { desc = '[G]it [Z]tash' })
     map('n', '<Leader>sb', builtin.buffers, { desc = '[S]earch [B]uffers' })
     map('n', '<Leader>sh', builtin.help_tags, { desc = '[S]earch [H]elps' })
     map('n', '<C-p>', builtin.git_files, { desc = 'Search Git Files' })

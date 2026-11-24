@@ -1,0 +1,59 @@
+# Shared Git configuration.
+# Identity and credentials stay in ~/.gitconfig, which Git reads after this
+# file, so they are not committed to this repository.
+
+[init]
+	defaultBranch = main
+
+[core]
+	editor = nvim
+
+[sequence]
+	editor = nvim
+
+[fetch]
+	prune = true
+
+[pull]
+	rebase = true
+
+[push]
+	autoSetupRemote = true
+
+[rebase]
+	autoStash = true
+
+[rerere]
+	enabled = true
+
+[merge]
+	conflictStyle = zdiff3
+
+[diff]
+	algorithm = histogram
+	colorMoved = zebra
+
+[commit]
+	verbose = true
+
+[column]
+	ui = auto
+
+[branch]
+	sort = -committerdate
+
+[help]
+	autocorrect = 10
+
+[alias]
+	st = status -sb
+	co = checkout
+	sw = switch
+	br = branch
+	ci = commit
+	last = log -1 HEAD --stat
+	lg = log --oneline --graph --decorate --all
+	df = diff
+	dc = diff --cached
+	unstage = reset HEAD --
+	amend = commit --amend --no-edit

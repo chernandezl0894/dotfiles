@@ -57,6 +57,8 @@ return {
         map('n', '<Leader>hp', gitsigns.preview_hunk)
         map('n', '<Leader>hd', gitsigns.diffthis)
         map('n', '<Leader>hD', function() gitsigns.diffthis('~') end)
+        map('n', '<Leader>gB', gitsigns.toggle_current_line_blame, { desc = "Toggle Line Blame" })
+        map('n', '<Leader>gS', gitsigns.stage_buffer, { desc = "Stage Buffer" })
         map('n', '<Leader>gcc', ':G commit -m "')
         map('n', '<Leader>gpm', ':G push origin main<CR>')
       end,

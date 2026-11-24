@@ -1,0 +1,52 @@
+gui:
+  nerdFontsVersion: "3"
+  showIcons: true
+  showFileIcons: true
+  border: "rounded"
+  showListFooter: false
+  showRandomTip: false
+  showCommandLog: false
+  theme:
+    activeBorderColor:
+      - "#b8bb26"
+      - bold
+    inactiveBorderColor:
+      - "#665c54"
+    searchingActiveBorderColor:
+      - "#fabd2f"
+      - bold
+    optionsTextColor:
+      - "#83a598"
+    selectedLineBgColor:
+      - "#3c3836"
+    cherryPickedCommitBgColor:
+      - "#458588"
+    cherryPickedCommitFgColor:
+      - "#ebdbb2"
+    unstagedChangesColor:
+      - "#fb4934"
+    defaultFgColor:
+      - "#ebdbb2"
+    authorColors:
+      "*": "#83a598"
+
+git:
+  autoFetch: true
+  autoRefresh: true
+  parseEmoji: true
+  skipHookPrefix: "WIP"
+  log:
+    order: "topo-order"
+    showGraph: "always"
+    showWholeGraph: true
+
+os:
+  # Open files in the Neovim instance that launched lazygit (via $NVIM).
+  editPreset: "nvim-remote"
+
+refresher:
+  refreshInterval: 10
+  fetchInterval: 60
+
+confirmOnQuit: false
+disableStartupPopups: true
