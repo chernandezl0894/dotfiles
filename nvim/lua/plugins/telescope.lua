@@ -4,6 +4,8 @@ return {
   dependencies = {
     'nvim-lua/plenary.nvim',
     'nvim-tree/nvim-web-devicons',
+    { 'nvim-telescope/telescope-fzf-native.nvim', build = 'make' },
+    'nvim-telescope/telescope-ui-select.nvim',
   },
   config = function()
     local telescope = require "telescope"
@@ -73,6 +75,9 @@ return {
       },
     })
 
+    pcall(telescope.load_extension, "fzf")
+    pcall(telescope.load_extension, "ui-select")
+
     map('n', 'gd', builtin.lsp_definitions, { desc = '[G]oto [D]efinitions' })
     map('n', 'gr', builtin.lsp_references, { desc = '[G]oto [R]eferences' })
     map('n', 'gI', builtin.lsp_implementations, { desc = '[G]oto [I]mplementations' })
@@ -92,7 +97,9 @@ return {
     map('n', '<Leader>gb', builtin.git_branches, { desc = '[G]it [B]ranches' })
     map('n', '<Leader>gz', builtin.git_stash, { desc = '[G]it [Z]tash' })
     map('n', '<Leader>sb', builtin.buffers, { desc = '[S]earch [B]uffers' })
+    map('n', '<Leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
     map('n', '<Leader>sh', builtin.help_tags, { desc = '[S]earch [H]elps' })
+    map('n', '<Leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
     map('n', '<C-p>', builtin.git_files, { desc = 'Search Git Files' })
     map('n', '<Leader>sx', function()
       builtin.find_files({

@@ -32,6 +32,10 @@ return {
       map('<Leader>e', vim.diagnostic.open_float, 'Open Float Diagnostic')
       map('[d', vim.diagnostic.goto_prev, '[[][D] Goto Previous')
       map(']d', vim.diagnostic.goto_next, '[[][D] Goto Next')
+
+      if vim.lsp.inlay_hint then
+        pcall(vim.lsp.inlay_hint.enable, true, { bufnr = bufnr })
+      end
       map('<Leader>f', function()
         local ok, conform = pcall(require, "conform")
         if ok then
@@ -92,7 +96,7 @@ return {
     lsp.emmet_ls.setup({
       on_attach = on_attach,
       capabilities = capabilities,
-      filetypes = { "html" },
+      filetypes = { "html", "css", "scss", "less", "javascriptreact", "typescriptreact" },
     })
 
     lsp.pyright.setup({
