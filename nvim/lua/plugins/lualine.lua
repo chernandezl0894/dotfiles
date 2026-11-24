@@ -6,6 +6,10 @@ return {
   config = function()
     local lualine = require "lualine"
     local function file_icon()
+      if not vim.g.have_nerd_font then
+        return ''
+      end
+
       local filename = vim.fn.expand('%:t')
       local extension = vim.fn.expand('%:e')
       local icon = require('nvim-web-devicons').get_icon(filename, extension, { default = true })

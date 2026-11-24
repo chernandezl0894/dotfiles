@@ -1,0 +1,9 @@
+# Nerd Font so Devicons, Lualine and DAP glyphs render correctly.
+font-family = "AdwaitaMono Nerd Font Mono"
+font-size = 16
+
+# Keep Ctrl+C available for interrupting terminal programs.
+copy-on-select = clipboard
+
+keybind = ctrl+shift+c=copy_to_clipboard
+keybind = ctrl+shift+v=paste_from_clipboard
