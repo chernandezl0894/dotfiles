@@ -23,11 +23,16 @@ family = "AdwaitaMono Nerd Font Mono"
 style = "Regular"
 
 [font.bold]
-#family = "Inconsolata LGC Nerd Font Propo"
-#family = "Hack Nerd Font Propo"
-#family = "JetBrainsMonoNLNerdFontPropoSemiBold"
-#style = "bold"
-#style = "SemiBold"
+family = "AdwaitaMono Nerd Font Mono"
+style = "Bold"
+
+[font.italic]
+family = "AdwaitaMono Nerd Font Mono"
+style = "Italic"
+
+[font.bold_italic]
+family = "AdwaitaMono Nerd Font Mono"
+style = "Bold Italic"
 
 [font.glyph_offset]
 x = 0
@@ -38,13 +43,13 @@ x = 0
 y = 0
 
 [window]
-padding.x = 0
-padding.y = 0
+padding.x = 4
+padding.y = 4
 dynamic_padding = true
 decorations = "Full"
 dynamic_title = true
 startup_mode = "Windowed"
-opacity = 1
+opacity = 0.97
 
 [window.dimensions]
 columns = 160
@@ -69,6 +74,7 @@ bindings = [
     { key = "V", mods = "Control|Shift", action = "Paste" },
     { key = "K", mods = "Control|Shift", action = "IncreaseFontSize" },
     { key = "J", mods = "Control|Shift", action = "DecreaseFontSize" },
+    { key = "Space", mods = "Control|Shift", action = "ToggleViMode" },
 ]
 
 [selection]
@@ -80,8 +86,13 @@ blink_timeout = 5
 unfocused_hollow = false
 
 [cursor.style]
-blinking = "off"
+blinking = "Off"
 shape = "Block"
+
+[terminal]
+# Allow copy operations through OSC 52 (tmux/SSH) without letting remote
+# applications read the clipboard.
+osc52 = "OnlyCopy"
 
 [env]
 ENV = "xterm-256color"
