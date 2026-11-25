@@ -27,6 +27,7 @@ return {
     "TtsSpeed",
     "TtsVoice",
     "TtsStatus",
+    "TtsDoctor",
   },
   keys = {
     { "<leader>rr", run(function(t) t.toggle() end), desc = "Leer en voz alta / pausar" },
@@ -42,7 +43,5 @@ return {
     voice = "es-MX-DaliaNeural",
     sapi_voice = "Microsoft Sabina Desktop",
     volume = 80,
-    player = "windows",
-    windows_delay = 500,
   },
 }
