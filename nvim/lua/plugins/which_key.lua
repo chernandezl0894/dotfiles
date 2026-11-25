@@ -9,6 +9,7 @@ return {
       { "<leader>H", group = "Harpoon" },
       { "<leader>h", group = "Git hunks" },
       { "<leader>q", group = "Sessions" },
+      { "<leader>r", group = "Read aloud" },
       { "<leader>s", group = "Search" },
       { "<leader>t", group = "Terminal / Tests" },
       { "<leader>u", group = "UI" },
