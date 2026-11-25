@@ -572,6 +572,21 @@ To add a theme, create a directory with the same four files. If it uses a
 Neovim colorscheme that is not installed, add the plugin first; if the
 colorscheme is missing, Neovim falls back to gruvbox with a warning.
 
+### Alacritty on Windows
+
+Windows Alacritty reads `%APPDATA%\alacritty\alacritty.toml`, a different file
+from the WSL one. It keeps its own font, size, opacity and window settings, and
+imports a stable theme file:
+
+```toml
+import = ["C:/Users/USER/AppData/Roaming/alacritty/theme.toml"]
+```
+
+`theme set` copies the active theme's `alacritty.toml` to that `theme.toml` and
+touches the Windows config so Alacritty reloads. Set `WIN_ALACRITTY` if the
+directory is not detected automatically. The original Windows config is backed
+up as `alacritty.toml.bak-pre-theme` when this integration is first enabled.
+
 ## Repository layout
 
 ```text

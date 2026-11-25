@@ -30,6 +30,37 @@ current_theme() {
   fi
 }
 
+windows_alacritty_dir() {
+  if [ -n "${WIN_ALACRITTY:-}" ] && [ -d "$WIN_ALACRITTY" ]; then
+    printf '%s\n' "$WIN_ALACRITTY"
+    return 0
+  fi
+
+  local dir
+  for dir in /mnt/c/Users/*/AppData/Roaming/alacritty; do
+    if [ -f "$dir/alacritty.toml" ]; then
+      printf '%s\n' "$dir"
+      return 0
+    fi
+  done
+}
+
+sync_windows_alacritty() {
+  local name="$1" dir
+  dir="$(windows_alacritty_dir || true)"
+  [ -n "$dir" ] || return 0
+
+  if cp "$THEMES_DIR/$name/alacritty.toml" "$dir/theme.toml"; then
+    touch "$dir/alacritty.toml"
+    echo "Alacritty Windows: $dir/theme.toml"
+    if ! grep -q "theme.toml" "$dir/alacritty.toml"; then
+      echo "Aviso: agrega import = [\".../theme.toml\"] en $dir/alacritty.toml" >&2
+    fi
+  else
+    echo "Aviso: no se pudo escribir en $dir" >&2
+  fi
+}
+
 reload_apps() {
   # Alacritty recarga al tocar su configuración principal.
   if [ -f "$HOME/.config/alacritty/alacritty.toml" ]; then
@@ -60,6 +91,7 @@ set_theme() {
   ln -sfn "$THEMES_DIR/$name" "$CURRENT"
   printf '%s\n' "$name" >"$ACTIVE"
   echo "Tema activo: $name"
+  sync_windows_alacritty "$name"
   reload_apps
 }
 
