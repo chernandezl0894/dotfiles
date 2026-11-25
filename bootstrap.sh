@@ -556,6 +556,15 @@ link_dotfiles() {
     link_file "$DOTFILES_DIR/$relative" "$HOME/.config/$relative"
   done
 
+  link_file "$DOTFILES_DIR/scripts/theme" "$BIN_DIR/theme"
+
+  # Tema activo por defecto; `theme set <nombre>` lo cambia.
+  if [ ! -e "$HOME/.config/theme/current" ]; then
+    run mkdir -p "$HOME/.config/theme"
+    run ln -sfn "$DOTFILES_DIR/themes/gruvbox-dark" "$HOME/.config/theme/current"
+    run sh -c "printf '%s\n' gruvbox-dark > '$HOME/.config/theme/active'"
+  fi
+
   # tmux reads ~/.tmux.conf on older versions; keep both paths in sync.
   link_file "$DOTFILES_DIR/tmux/tmux.conf" "$HOME/.tmux.conf"
   link_file "$DOTFILES_DIR/scripts/tmux-sessionizer" "$BIN_DIR/tmux-sessionizer"

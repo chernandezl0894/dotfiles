@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+# Cambia el tema de Alacritty, tmux, i3 y Neovim desde un solo lugar.
+set -euo pipefail
+
+# Resolver el repo incluso si este script está symlinkeado en ~/.local/bin.
+SOURCE="${BASH_SOURCE[0]}"
+while [ -L "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+DOTFILES_DIR="$(cd -P "$(dirname "$SOURCE")/.." >/dev/null 2>&1 && pwd)"
+
+THEMES_DIR="$DOTFILES_DIR/themes"
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/theme"
+CURRENT="$CONFIG_DIR/current"
+ACTIVE="$CONFIG_DIR/active"
+
+list_themes() {
+  local dir
+  for dir in "$THEMES_DIR"/*/; do
+    [ -d "$dir" ] || continue
+    basename "$dir"
+  done | sort
+}
+
+current_theme() {
+  if [ -L "$CURRENT" ]; then
+    basename "$(readlink "$CURRENT")"
+  fi
+}
+
+reload_apps() {
+  # Alacritty recarga al tocar su configuración principal.
+  if [ -f "$HOME/.config/alacritty/alacritty.toml" ]; then
+    touch "$HOME/.config/alacritty/alacritty.toml"
+  fi
+
+  # tmux no expande ~ en source-file, pero aquí el shell ya expandió $HOME.
+  if command -v tmux >/dev/null 2>&1 && tmux info >/dev/null 2>&1; then
+    tmux source-file "$CURRENT/tmux.conf" >/dev/null 2>&1 || true
+  fi
+
+  if command -v i3-msg >/dev/null 2>&1 && i3-msg -t get_version >/dev/null 2>&1; then
+    i3-msg reload >/dev/null 2>&1 || true
+  fi
+
+  # Neovim escucha ~/.config/theme; el archivo active dispara el cambio.
+}
+
+set_theme() {
+  local name="$1"
+  if [ ! -d "$THEMES_DIR/$name" ]; then
+    echo "Tema no encontrado: $name" >&2
+    echo "Disponibles: $(list_themes | tr '\n' ' ')" >&2
+    exit 1
+  fi
+
+  mkdir -p "$CONFIG_DIR"
+  ln -sfn "$THEMES_DIR/$name" "$CURRENT"
+  printf '%s\n' "$name" >"$ACTIVE"
+  echo "Tema activo: $name"
+  reload_apps
+}
+
+usage() {
+  cat <<'EOF'
+Uso: theme <comando>
+
+  theme list              Lista los temas disponibles
+  theme current           Muestra el tema activo
+  theme set <nombre>      Activa un tema
+  theme next              Rota al siguiente tema
+EOF
+}
+
+case "${1:-}" in
+  list | ls)
+    list_themes
+    ;;
+  current)
+    current_theme
+    ;;
+  set)
+    if [ $# -lt 2 ]; then
+      usage
+      exit 1
+    fi
+    set_theme "$2"
+    ;;
+  next)
+    mapfile -t themes < <(list_themes)
+    if [ ${#themes[@]} -eq 0 ]; then
+      echo "No hay temas en $THEMES_DIR" >&2
+      exit 1
+    fi
+    next="${themes[0]}"
+    current="$(current_theme || true)"
+    for i in "${!themes[@]}"; do
+      if [ "${themes[$i]}" = "$current" ]; then
+        next="${themes[$(((i + 1) % ${#themes[@]}))]}"
+        break
+      fi
+    done
+    set_theme "$next"
+    ;;
+  help | -h | --help | "")
+    usage
+    ;;
+  *)
+    echo "Comando desconocido: $1" >&2
+    usage
+    exit 1
+    ;;
+esac

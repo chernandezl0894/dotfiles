@@ -11,6 +11,9 @@
 
 set $mod Mod4
 
+# Tema activo (ventanas y barra)
+include ~/.config/theme/current/i3.conf
+
 # Minimal gaps for a small laptop screen.
 gaps inner 6
 gaps outer 4
@@ -208,6 +211,15 @@ bindsym $mod+r mode "resize"
 bar {
         status_command i3status
         position bottom
+        colors {
+                background $theme_bar_bg
+                statusline $theme_bar_fg
+                separator $theme_bar_sep
+                focused_workspace $theme_accent $theme_accent $theme_fg
+                active_workspace $theme_inactive_bg $theme_inactive_bg $theme_fg
+                inactive_workspace $theme_bar_bg $theme_bar_bg $theme_inactive_fg
+                urgent_workspace $theme_red $theme_red $theme_fg
+        }
 }
 
 # exec xrandr --output eDP-1 --mode 1920x1080

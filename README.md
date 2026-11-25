@@ -81,7 +81,7 @@ The bootstrap script is idempotent and always (re)creates the configuration syml
 ./bootstrap.sh --skip-mason --skip-tmux-plugins
 ```
 
-It links Neovim, zsh, tmux, Alacritty, Ghostty, Git, lazygit, i3, and i3status into `~/.config`, replacing existing targets. It also links `zsh/zshrc` to `~/.zshrc`, `tmux-sessionizer` into `~/.local/bin`, and `tmux/tmux.conf` into `~/.tmux.conf`, and installs the i3bar Nerd Font into `${XDG_DATA_HOME:-~/.local/share}/fonts` unless `--skip-fonts` is passed.
+It links Neovim, zsh, tmux, Alacritty, Ghostty, Git, lazygit, i3, and i3status into `~/.config`, replacing existing targets. It also links `zsh/zshrc` to `~/.zshrc`, `tmux-sessionizer` and the `theme` switcher into `~/.local/bin`, and `tmux/tmux.conf` into `~/.tmux.conf`, and installs the i3bar Nerd Font into `${XDG_DATA_HOME:-~/.local/share}/fonts` unless `--skip-fonts` is passed.
 
 ## Packages and libraries
 
@@ -439,7 +439,7 @@ Alacritty is built with Cargo from the pinned `ALACRITTY_VERSION` (default
 `0.17.0`) instead of Debian 12's old package. The bootstrap also installs the
 terminfo entry, the `.desktop` file, and the icon in `~/.local`.
 
-- **Alacritty** is the primary terminal: Sweetie Light theme, AdwaitaMono Nerd
+- **Alacritty** is the primary terminal: theme managed centrally (gruvbox-dark by default), AdwaitaMono Nerd
   Font Mono, 4 px padding, 0.97 opacity, 160x80 initial window, Vi mode,
   OSC 52 copy support, clipboard shortcuts, and 100,000-line scrollback. Bold,
   italic, and bold-italic faces use the same Nerd Font.
@@ -533,6 +533,45 @@ Media keys:
 
 i3bar runs `i3status` at the bottom, refreshed every 5 seconds. From left to right it shows Wi-Fi (ESSID, colored by signal quality), CPU usage, RAM usage, root disk availability, battery (icon by state, percentage, and time left), and the date/time in `America/Lima`. Volume keys send `SIGUSR1` to `i3status`, so the bar refreshes immediately even though it no longer displays the volume.
 
+## Themes
+
+Themes live in `themes/<name>/`, with one native snippet per application:
+
+```text
+themes/gruvbox-dark/
+├── alacritty.toml   # [colors.*] importado por Alacritty
+├── tmux.conf        # status, bordes, mensajes y modo
+├── i3.conf          # client.* y colores de la barra
+└── nvim.lua         # colorscheme, background y overrides
+```
+
+`~/.config/theme/current` is a symlink to the active theme. Every app includes
+from that stable path:
+
+- Alacritty: `import = ["~/.config/theme/current/alacritty.toml"]`
+- tmux: `if-shell` + `source-file` (tmux does not expand `~` on its own)
+- i3: `include ~/.config/theme/current/i3.conf`
+- Neovim: `config/theme.lua` loads `nvim.lua` and watches
+  `~/.config/theme` to reapply the theme in every running instance.
+
+Switch themes from anywhere:
+
+```bash
+theme list
+theme current
+theme set gruvbox-light
+theme next
+```
+
+The switcher reloads Alacritty (live config reload), tmux (`source-file`) and
+i3 (`i3-msg reload`); Neovim updates through the filesystem watcher. Apps that
+are not running are ignored. Available themes: `gruvbox-dark` (default) and
+`gruvbox-light`.
+
+To add a theme, create a directory with the same four files. If it uses a
+Neovim colorscheme that is not installed, add the plugin first; if the
+colorscheme is missing, Neovim falls back to gruvbox with a warning.
+
 ## Repository layout
 
 ```text
@@ -543,11 +582,12 @@ i3bar runs `i3status` at the bottom, refreshed every 5 seconds. From left to rig
 ├── tmux/              # tmux configuration
 ├── git/               # Shared Git configuration and global ignore rules
 ├── lazygit/           # lazygit configuration
-├── alacritty/         # Alacritty configuration and themes
+├── alacritty/         # Alacritty configuration
 ├── ghostty/           # Ghostty configuration
+├── themes/            # Centralized themes for Alacritty, tmux, i3 and Neovim
 ├── i3/                # i3 window manager configuration
 ├── i3status/          # i3status bar configuration
-└── scripts/           # tmux-sessionizer and clipboard helpers
+└── scripts/           # tmux-sessionizer, theme switcher and clipboard helpers
 ```
 
 ## Maintenance

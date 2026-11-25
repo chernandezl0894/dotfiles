@@ -1,9 +1,7 @@
 [general]
 live_config_reload = true
 import = [
-  # "~/.config/alacritty/themes/dreamsof.toml"
-  # "~/.config/alacritty/themes/catppuccin-latte.toml"
-  "~/.config/alacritty/themes/sweetie_light.toml"
+  "~/.config/theme/current/alacritty.toml"
 ]
 
 [bell]
