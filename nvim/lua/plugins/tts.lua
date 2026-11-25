@@ -38,8 +38,9 @@ return {
     { "<leader>rv", run(function(t) t.pick_voice() end), desc = "Cambiar voz" },
   },
   opts = {
-    voice = "Microsoft Sabina Desktop",
-    rate = 0,
+    backend = "edge",
+    voice = "es-MX-DaliaNeural",
+    sapi_voice = "Microsoft Sabina Desktop",
     volume = 100,
   },
 }
