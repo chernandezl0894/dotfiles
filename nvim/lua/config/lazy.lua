@@ -19,4 +19,9 @@ require("lazy").setup({
   spec = {
     { import = "plugins" },
   },
+}, {
+  -- Plugins en desarrollo: ~/projects/<nombre-del-repo>
+  dev = {
+    path = vim.fn.expand("~/projects"),
+  },
 })

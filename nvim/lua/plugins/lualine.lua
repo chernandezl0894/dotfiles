@@ -25,6 +25,15 @@ return {
       return 'recording @' .. register
     end
 
+    -- Conteo de palabras; "" cuando el plugin no está o el ft no aplica.
+    local function wordcount()
+      local ok, wc = pcall(require, 'wordcount')
+      if not ok then
+        return ''
+      end
+      return wc.statusline()
+    end
+
     lualine.setup({
       options = {
         icons_enabled = true,
@@ -48,7 +57,7 @@ return {
         lualine_a = { 'mode' },
         lualine_b = { 'branch', 'diff' },
         lualine_c = { file_icon, { 'filename', path = 1 } },
-        lualine_x = { 'searchcount', 'selectioncount', recording, 'diagnostics', 'lsp_status', 'filetype' },
+        lualine_x = { 'searchcount', 'selectioncount', wordcount, recording, 'diagnostics', 'lsp_status', 'filetype' },
         lualine_y = { 'progress' },
         lualine_z = { 'location' }
       },
