@@ -81,7 +81,7 @@ The bootstrap script is idempotent and always (re)creates the configuration syml
 ./bootstrap.sh --skip-mason --skip-tmux-plugins
 ```
 
-It links Neovim, zsh, tmux, Alacritty, Ghostty, Git, lazygit, i3, and i3status into `~/.config`, replacing existing targets. It also links `zsh/zshrc` to `~/.zshrc`, `tmux-sessionizer` and the `theme` switcher into `~/.local/bin`, and `tmux/tmux.conf` into `~/.tmux.conf`, and installs the i3bar Nerd Font into `${XDG_DATA_HOME:-~/.local/share}/fonts` unless `--skip-fonts` is passed.
+It links Neovim, zsh, tmux, Alacritty, Ghostty, Git, lazygit, i3, and i3status into `~/.config`, replacing existing targets. It also links `zsh/zshrc` to `~/.zshrc`, `tmux-sessionizer` and the `theme` switcher into `~/.local/bin`, and `tmux/tmux.conf` into `~/.tmux.conf`, and installs the i3bar Nerd Font into `${XDG_DATA_HOME:-~/.local/share}/fonts` unless `--skip-fonts` is passed. The `skills/` directory is linked into OpenCode, Claude Code, and `~/.agents` as described in [Skills](#skills).
 
 ## Packages and libraries
 
@@ -606,11 +606,29 @@ touches the Windows config so Alacritty reloads. Set `WIN_ALACRITTY` if the
 directory is not detected automatically. The original Windows config is backed
 up as `alacritty.toml.bak-pre-theme` when this integration is first enabled.
 
+## Skills
+
+Agent skills are versioned in `skills/` and shared by every agent. Each skill is
+a directory with a `SKILL.md`; the directory name is the skill ID. `bootstrap.sh`
+links that directory so OpenCode keeps its native location on top:
+
+- `~/.config/opencode/skills` → `skills/` (OpenCode native, highest precedence)
+- `~/.agents/skills` → `skills/` (skills CLI and Codex compatibility)
+- `~/.claude/skills/<id>` → `skills/<id>` (Claude Code compatibility; the
+  directory stays real so Claude Code can keep its `synced/` skills there)
+
+To add a personal skill, create `skills/<id>/SKILL.md` and re-run the link step.
+Third-party skills can be installed with the `skills` CLI: because
+`~/.agents/skills` points to this repo, new files land here and can be reviewed
+and committed. See [SKILLS.md](SKILLS.md) for discovery rules, precedence, and
+the upstream source of every vendored skill.
+
 ## Repository layout
 
 ```text
 .
 ├── bootstrap.sh       # Debian/Ubuntu, Fedora, and Arch provisioning script
+├── SKILLS.md          # Skill sources, precedence and vendoring notes
 ├── nvim/              # Neovim configuration and lazy-lock.json
 ├── zsh/               # Minimal zsh configuration
 ├── tmux/              # tmux configuration
@@ -621,6 +639,7 @@ up as `alacritty.toml.bak-pre-theme` when this integration is first enabled.
 ├── themes/            # Centralized themes for Alacritty, tmux, i3 and Neovim
 ├── i3/                # i3 window manager configuration
 ├── i3status/          # i3status bar configuration
+├── skills/            # Agent skills shared with OpenCode, Claude Code and Codex
 └── scripts/           # tmux-sessionizer, theme switcher and clipboard helpers
 ```
 

@@ -558,6 +558,26 @@ link_dotfiles() {
 
   link_file "$DOTFILES_DIR/scripts/theme" "$BIN_DIR/theme"
 
+  # Skills: the repo is the source of truth. OpenCode reads its native
+  # directory and gives it precedence over the compatibility locations.
+  link_file "$DOTFILES_DIR/skills" "$HOME/.config/opencode/skills"
+  link_file "$DOTFILES_DIR/skills" "$HOME/.agents/skills"
+
+  # Claude Code keeps claude.ai synced skills in ~/.claude/skills/synced, so
+  # link each repo skill instead of replacing the whole directory.
+  run mkdir -p "$HOME/.claude/skills"
+  for existing in "$HOME/.claude/skills"/*; do
+    [ -L "$existing" ] || continue
+    target="$(readlink -f "$existing" || true)"
+    case "$target" in
+      "$HOME/.agents/skills"/* | "$DOTFILES_DIR"/skills/*) run rm -f "$existing" ;;
+    esac
+  done
+  for skill_dir in "$DOTFILES_DIR"/skills/*/; do
+    [ -f "$skill_dir/SKILL.md" ] || continue
+    link_file "$skill_dir" "$HOME/.claude/skills/$(basename "$skill_dir")"
+  done
+
   # Tema activo por defecto; `theme set <nombre>` lo cambia.
   if [ ! -e "$HOME/.config/theme/current" ]; then
     run mkdir -p "$HOME/.config/theme"

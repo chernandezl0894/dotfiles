@@ -1,0 +1,45 @@
+id: {{COURSE_ID}}
+title: {{TITLE}}
+description: {{DESCRIPTION}}
+language: es
+code_language: {{CODE_LANGUAGE}}
+level: {{LEVEL}}
+duration_minutes: {{DURATION_MINUTES}}
+version: 1
+license: {{LICENSE}}
+tags:
+  - {{TAG_1}}
+  - {{TAG_2}}
+authors:
+  - name: {{AUTHOR}}
+modules:
+  - id: 1
+    title: {{MODULE_1_TITLE}}
+    lessons:
+      - id: 1
+        title: {{LESSON_1_TITLE}}
+        file: lessons/01-{{LESSON_1_SLUG}}.md
+        level: {{LESSON_1_LEVEL}}
+        duration_minutes: {{LESSON_1_MINUTES}}
+        exercises: 3
+        status: planned
+      - id: 2
+        title: {{LESSON_2_TITLE}}
+        file: lessons/02-{{LESSON_2_SLUG}}.md
+        level: {{LESSON_2_LEVEL}}
+        duration_minutes: {{LESSON_2_MINUTES}}
+        exercises: 3
+        status: planned
+  - id: 2
+    title: {{MODULE_2_TITLE}}
+    lessons:
+      - id: 3
+        title: {{LESSON_3_TITLE}}
+        file: lessons/03-{{LESSON_3_SLUG}}.md
+        level: {{LESSON_3_LEVEL}}
+        duration_minutes: {{LESSON_3_MINUTES}}
+        exercises: 3
+        status: planned
+
+# Añade todos los módulos y lecciones del plan.
+# status: planned | in-progress | written | reviewed | dropped
