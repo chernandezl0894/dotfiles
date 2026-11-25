@@ -4,7 +4,7 @@ return {
   dependencies = {
     "nvim-treesitter/nvim-treesitter-textobjects",
   },
-  event = 'VeryLazy',
+  event = { 'BufReadPre', 'BufNewFile' },
   main = 'nvim-treesitter.configs',
   opts = {
     ensure_installed = {
@@ -28,6 +28,7 @@ return {
       'json',
       'yaml',
       'markdown',
+      'markdown_inline',
     },
     autotag = {
       enable = true,
