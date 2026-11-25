@@ -566,8 +566,8 @@ theme next
 
 The switcher reloads Alacritty (live config reload), tmux (`source-file`) and
 i3 (`i3-msg reload`); Neovim updates through the filesystem watcher. Apps that
-are not running are ignored. Available themes: `gruvbox-dark` (default) and
-`gruvbox-light`.
+are not running are ignored. Available themes: `gruvbox-dark` (default),
+`gruvbox-light`, `catppuccin-mocha` and `catppuccin-latte`.
 
 OpenCode reads its theme from `~/.config/opencode/cli.json`. Each theme maps
 itself with `opencode.json`:
