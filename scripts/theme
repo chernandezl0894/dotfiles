@@ -45,6 +45,70 @@ windows_alacritty_dir() {
   done
 }
 
+sync_opencode() {
+  local name="$1" mapping cfg
+  mapping="$THEMES_DIR/$name/opencode.json"
+  [ -f "$mapping" ] || return 0
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "Aviso: python3 no encontrado; OpenCode no se actualizó" >&2
+    return 0
+  fi
+
+  local targets=("${XDG_CONFIG_HOME:-$HOME/.config}/opencode/cli.json")
+  [ -n "${WIN_OPENCODE_CONFIG:-}" ] && targets+=("$WIN_OPENCODE_CONFIG")
+  for cfg in /mnt/c/Users/*/.config/opencode/cli.json; do
+    [ -f "$cfg" ] && targets+=("$cfg")
+  done
+
+  for cfg in "${targets[@]}"; do
+    [ -f "$cfg" ] || continue
+    if python3 - "$cfg" "$mapping" <<'PY'
+import json
+import sys
+
+config_path, mapping_path = sys.argv[1], sys.argv[2]
+with open(config_path, encoding="utf-8") as fh:
+    config = json.load(fh)
+with open(mapping_path, encoding="utf-8") as fh:
+    theme = json.load(fh)
+
+if not isinstance(theme, dict) or "name" not in theme:
+    raise SystemExit(1)
+
+config["theme"] = {"name": theme["name"], "mode": theme.get("mode", "system")}
+with open(config_path, "w", encoding="utf-8") as fh:
+    json.dump(config, fh, indent=2, ensure_ascii=False)
+    fh.write("\n")
+PY
+    then
+      echo "OpenCode: $cfg"
+    else
+      echo "Aviso: no se pudo actualizar $cfg" >&2
+    fi
+  done
+}
+
+sync_windows_nvim() {
+  local name="$1" dir
+  local dirs=()
+  if [ -n "${WIN_NVIM:-}" ] && [ -d "$WIN_NVIM" ]; then
+    dirs+=("$WIN_NVIM")
+  else
+    for dir in /mnt/c/Users/*/AppData/Local/nvim; do
+      [ -f "$dir/init.lua" ] && dirs+=("$dir")
+    done
+  fi
+
+  for dir in "${dirs[@]}"; do
+    if cp "$THEMES_DIR/$name/nvim.lua" "$dir/theme-central.lua"; then
+      echo "Neovim Windows: $dir/theme-central.lua"
+    else
+      echo "Aviso: no se pudo escribir en $dir" >&2
+    fi
+  done
+}
+
 sync_windows_alacritty() {
   local name="$1" dir
   dir="$(windows_alacritty_dir || true)"
@@ -92,6 +156,8 @@ set_theme() {
   printf '%s\n' "$name" >"$ACTIVE"
   echo "Tema activo: $name"
   sync_windows_alacritty "$name"
+  sync_windows_nvim "$name"
+  sync_opencode "$name"
   reload_apps
 }
 

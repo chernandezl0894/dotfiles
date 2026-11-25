@@ -542,7 +542,8 @@ themes/gruvbox-dark/
 ├── alacritty.toml   # [colors.*] importado por Alacritty
 ├── tmux.conf        # status, bordes, mensajes y modo
 ├── i3.conf          # client.* y colores de la barra
-└── nvim.lua         # colorscheme, background y overrides
+├── nvim.lua         # colorscheme, background y overrides
+└── opencode.json    # name + mode para OpenCode
 ```
 
 `~/.config/theme/current` is a symlink to the active theme. Every app includes
@@ -568,7 +569,25 @@ i3 (`i3-msg reload`); Neovim updates through the filesystem watcher. Apps that
 are not running are ignored. Available themes: `gruvbox-dark` (default) and
 `gruvbox-light`.
 
-To add a theme, create a directory with the same four files. If it uses a
+OpenCode reads its theme from `~/.config/opencode/cli.json`. Each theme maps
+itself with `opencode.json`:
+
+```json
+{ "name": "gruvbox", "mode": "dark" }
+```
+
+`theme set` merges that object into the WSL config and, when present, the
+Windows config at `C:\Users\<user>\.config\opencode\cli.json`. OpenCode
+reloads CLI settings live; if a Windows instance does not pick it up, reopen it.
+Override the Windows path with `WIN_OPENCODE_CONFIG` if needed.
+
+Windows Neovim keeps its own config at `%LOCALAPPDATA%\nvim`. `theme set` copies
+the active `nvim.lua` to `%LOCALAPPDATA%\nvim\theme-central.lua`; that config
+loads the file once and watches it, so the same theme applies live. The original
+Windows `theme.lua` is backed up as `theme.lua.bak-pre-central` when this is
+enabled. Override the directory with `WIN_NVIM`.
+
+To add a theme, create a directory with the same five files. If it uses a
 Neovim colorscheme that is not installed, add the plugin first; if the
 colorscheme is missing, Neovim falls back to gruvbox with a warning.
 
