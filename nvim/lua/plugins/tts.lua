@@ -41,6 +41,8 @@ return {
     backend = "edge",
     voice = "es-MX-DaliaNeural",
     sapi_voice = "Microsoft Sabina Desktop",
-    volume = 100,
+    volume = 80,
+    player = "windows",
+    windows_delay = 500,
   },
 }
