@@ -16,7 +16,7 @@ return {
   "tts.nvim",
   dev = true,
   enabled = function()
-    return (vim.uv or vim.loop).fs_stat(dev_dir) ~= nil and vim.fn.has("wsl") == 1
+    return (vim.uv or vim.loop).fs_stat(dev_dir) ~= nil
   end,
   cmd = {
     "TtsRead",
