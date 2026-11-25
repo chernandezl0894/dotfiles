@@ -37,6 +37,8 @@ map('n', '<C-Left>', '<CMD>vertical resize -2<CR>', { desc = 'Resize With Arrows
 map('n', '<C-Right>', '<CMD>vertical resize +2<CR>', { desc = 'Resize With Arrows' })
 map("n", "<leader>sv", "<C-w>v", { desc = "[S]plit [V]ertically" })              -- split vertically
 map("n", "<leader>sh", "<C-w>s", { desc = "[S]plit [H]orizontally" })            -- split horizontally
+map("n", "<leader>|", "<C-w>v", { desc = "Split vertically (|)" })               -- same as prefix | in tmux
+map("n", "<leader>-", "<C-w>s", { desc = "Split horizontally (-)" })             -- same as prefix - in tmux
 map("n", "<leader>se", "<C-w>=", { desc = "Make Split Windows [=]equal width" }) -- make split windows equal width.
 map("n", "<leader>sx", ":close<CR>", { desc = "Current [S]plit [X]Close" })      -- close current split window.
 map("n", "<leader>z", ":set wrap!<CR>", { desc = "Toggle Word [W]rap" })

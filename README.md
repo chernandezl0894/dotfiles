@@ -17,7 +17,7 @@ This is a ready-to-reproduce workstation setup for a terminal-first workflow:
 
 - **Neovim** with LSP, completion, formatting, linting, Treesitter, Git integration, debugging, and test running.
 - **Language support** for Python, C/C++, Go, Rust, Odin, Zig, Lua, JavaScript/TypeScript, HTML, CSS, and Tailwind.
-- **zsh** with shared history, completion, a compact two-line prompt, and optional pyenv/nvm/zoxide/direnv hooks.
+- **zsh** with shared history, completion with inline autosuggestions, a compact two-line prompt, and optional pyenv/nvm/zoxide/direnv hooks.
 - **tmux** with a `C-a` prefix, Vim-style pane navigation, fzf project switching, session restore, and clipboard integration.
 - **Alacritty** as the primary terminal: Nerd Font, padding, opacity, Vi mode, and clipboard shortcuts.
 - **i3/i3status** with a lightweight configuration for low-resource laptops.
@@ -60,6 +60,7 @@ Open a new shell after the bootstrap finishes so the updated `PATH` is used.
 | `--skip-mason` | Install Neovim plugins but skip Mason-managed LSPs, formatters, and debug adapters. |
 | `--skip-dotfiles` | Do not link the dotfiles; assume the configuration is already linked. |
 | `--skip-tmux-plugins` | Do not clone TPM or install tmux plugins. |
+| `--skip-zsh-plugins` | Do not clone the zsh completion and autosuggestion plugins. |
 | `--skip-fonts` | Do not download or install the i3bar Nerd Font. |
 | `--set-zsh-shell` | Set zsh as the login shell for the current user. |
 | `--nvim-version VER` | Install a specific Neovim version. Default: `0.10.4`. |
@@ -92,7 +93,7 @@ The bootstrap installs:
 
 - Build tools: `build-essential`, `cmake`, `pkg-config`, `make`, `clang`, `lld`, `gdb`
 - Build headers for Alacritty: `fontconfig`, `freetype`, `xcb`, `xkbcommon`, `wayland`, and `ncurses`/`tic`
-- Utilities: `git`, `curl`, `wget`, `unzip`, `zip`, `tar`, `xz-utils`, `ripgrep`, `fd-find`, `fzf`, `less`, `openssh-client`
+- Utilities: `git`, `curl`, `wget`/`wget2`, `unzip`, `zip`, `tar`, `xz-utils`, `ripgrep`, `fd-find`, `fzf`, `less`, `openssh-client`
 - Python: `python3`, `python3-pip`, `python3-venv`
 - Terminal: `zsh`, `tmux`, `xclip`, `wl-clipboard`
 - Desktop (lightweight): `i3`, `i3status`, `i3lock`, `xss-lock`, `rofi`, `maim`, `brightnessctl`, `playerctl`, `dex`
@@ -169,7 +170,7 @@ color previews.
 | `toggleterm.nvim` | Integrated terminals, Makefile shortcuts, and a lazygit float. |
 | `vim-tmux-navigator` | Seamless navigation between Neovim splits and tmux panes. |
 | `which-key.nvim` | Keymap discovery with grouped leader menus. |
-| `lualine.nvim`, `nvim-web-devicons` | Statusline and file icons. |
+| `lualine.nvim`, `nvim-web-devicons` | Statusline with Git branch/diff, diagnostics, LSP client, search count, and file icons. |
 | `gruvbox` | Color scheme. |
 | `nvim-notify` | Notification UI. |
 | `indent-blankline.nvim` | Indentation guides. |
@@ -214,6 +215,7 @@ The leader key is `Space`.
 | `<leader>gB` / `<leader>gS` | Toggle line blame / stage the whole buffer. |
 | `<leader>gl` / `<leader>gL` / `<leader>gb` / `<leader>gz` | Git log / buffer log / branches / stashes. |
 | `<C-h>` / `<C-j>` / `<C-k>` / `<C-l>` | Move between Neovim splits and tmux panes. |
+| `<leader>\|` / `<leader>-` | Split vertically / horizontally (mirrors `prefix \|` and `prefix -` in tmux). |
 | `<leader>` + backtick | Toggle terminal. |
 | `<leader>tt` / `<leader>th` / `<leader>tv` | Floating / horizontal / vertical terminal. |
 | `<leader>t1` … `<leader>t5` | Open terminal by number. |
@@ -281,7 +283,12 @@ configuration is intentionally minimal:
 - **Two-line prompt**: the working directory and git branch are on the first line
   and the `❯` marker on the second, so narrow terminals stay readable.
 - **History and completion**: 20,000 shared history entries, duplicate
-  suppression, and menu completion.
+  suppression, and a colored menu completion with case-insensitive matching.
+- **Autosuggestions**: `zsh-autosuggestions` and `zsh-completions` are cloned
+  into `${XDG_DATA_HOME:-~/.local/share}/zsh/plugins` by the bootstrap; the
+  config also falls back to an existing `~/.oh-my-zsh/custom/plugins` copy, so
+  the shell still works without them. Suggestions appear in grey and are
+  accepted with `Ctrl-E` or `Right`; `Alt-Right` accepts one word.
 - **PATH and editor**: `~/.local/bin`, `~/go/bin`, and `~/.cargo/bin` are added
   to `PATH`; `EDITOR`, `VISUAL`, and `PAGER` default to `nvim`, `nvim`, and
   `less`.

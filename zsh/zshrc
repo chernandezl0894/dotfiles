@@ -11,10 +11,46 @@ setopt AUTO_CD INTERACTIVE_COMMENTS PROMPT_SUBST
 bindkey -e
 
 # Completion
+zmodload zsh/complist 2>/dev/null
+
+# Extra completion definitions from zsh-completions when installed.
+for completion_dir in \
+  "${XDG_DATA_HOME:-$HOME/.local/share}/zsh/plugins/zsh-completions/src" \
+  "$HOME/.oh-my-zsh/custom/plugins/zsh-completions/src"; do
+  if [ -d "$completion_dir" ]; then
+    fpath=("$completion_dir" $fpath)
+    break
+  fi
+done
+
 autoload -Uz compinit
 compinit -i
+
 zstyle ':completion:*' menu select
-zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*'
+zstyle ':completion:*:descriptions' format '%F{yellow}-- %d --%f'
+zstyle ':completion:*:warnings' format '%F{red}-- no matches --%f'
+[ -n "$LS_COLORS" ] && zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+if [ -d "${XDG_CACHE_HOME:-$HOME/.cache}/zsh" ] ||
+  mkdir -p "${XDG_CACHE_HOME:-$HOME/.cache}/zsh" 2>/dev/null; then
+  zstyle ':completion:*' use-cache on
+  zstyle ':completion:*' cache-path "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/compcache"
+fi
+setopt COMPLETE_IN_WORD AUTO_LIST
+bindkey '^[[Z' reverse-menu-complete
+
+# Autosuggestions: grey inline hints from history and completion.
+# Accept with Ctrl-E or Right arrow; accept one word with Alt-Right.
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
+ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+for autosuggest_dir in \
+  "${XDG_DATA_HOME:-$HOME/.local/share}/zsh/plugins/zsh-autosuggestions" \
+  "$HOME/.oh-my-zsh/custom/plugins/zsh-autosuggestions"; do
+  if [ -r "$autosuggest_dir/zsh-autosuggestions.zsh" ]; then
+    source "$autosuggest_dir/zsh-autosuggestions.zsh"
+    break
+  fi
+done
 
 # PATH: tools installed by bootstrap and common user toolchains.
 export PATH="$HOME/.local/bin:$HOME/go/bin:$HOME/.cargo/bin:$PATH"

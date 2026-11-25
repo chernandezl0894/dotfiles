@@ -13,6 +13,7 @@
 #   --skip-mason          Do not install Mason packages
 #   --skip-dotfiles       Do not link dotfiles (assume config is already linked)
 #   --skip-tmux-plugins   Do not install TPM plugins
+#   --skip-zsh-plugins    Do not install zsh completion/autosuggestion plugins
 #   --skip-fonts          Do not install the i3bar Nerd Font
 #   --set-zsh-shell       Set zsh as the login shell for the current user
 #   --nvim-version VER    Neovim version to install (default: 0.10.4)
@@ -36,6 +37,7 @@ ALACRITTY_VERSION="${ALACRITTY_VERSION:-0.17.0}"
 SKIP_MASON=0
 SKIP_DOTFILES=0
 SKIP_TMUX_PLUGINS=0
+SKIP_ZSH_PLUGINS=0
 SKIP_FONTS=0
 SET_ZSH_SHELL=0
 DRY_RUN=0
@@ -48,6 +50,7 @@ BIN_DIR="$HOME/.local/bin"
 OPT_DIR="$HOME/.local/opt"
 CARGO_BIN="$HOME/.cargo/bin"
 MASON_DIR="$HOME/.local/share/nvim/mason"
+ZSH_PLUGIN_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/zsh/plugins"
 
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-bootstrap.XXXXXX")"
 cleanup() {
@@ -79,7 +82,7 @@ run() {
 }
 
 usage() {
-  sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 while [ "$#" -gt 0 ]; do
@@ -92,6 +95,9 @@ while [ "$#" -gt 0 ]; do
       ;;
     --skip-tmux-plugins)
       SKIP_TMUX_PLUGINS=1
+      ;;
+    --skip-zsh-plugins)
+      SKIP_ZSH_PLUGINS=1
       ;;
     --skip-fonts)
       SKIP_FONTS=1
@@ -204,7 +210,7 @@ install_os_packages() {
         unzip zip tar xz-utils \
         build-essential cmake pkg-config make ncurses-bin \
         clang lld gdb \
-        libfontconfig1-dev libfreetype6-dev libxcb1-dev libxkbcommon-dev libwayland-dev \
+        libfontconfig1-dev libfreetype-dev libxcb1-dev libxkbcommon-dev libwayland-dev \
         ripgrep fd-find fzf \
         python3 python3-pip python3-venv \
         zsh tmux xclip wl-clipboard openssh-client less \
@@ -219,7 +225,7 @@ install_os_packages() {
     fedora)
       log "Installing OS packages (dnf)"
       run "${SUDO[@]}" dnf install -y \
-        git curl wget ca-certificates gnupg2 \
+        git curl wget2 ca-certificates gnupg2 \
         unzip zip tar xz \
         gcc gcc-c++ make cmake pkgconf-pkg-config ncurses \
         clang lld gdb \
@@ -306,12 +312,15 @@ install_node() {
       ;;
     fedora)
       log "Installing Node.js from the Fedora repositories"
-      run "${SUDO[@]}" dnf install -y nodejs npm
+      # Fedora bundles npm inside the nodejs package; there is no separate
+      # "npm" package (it was retired along with the standalone wget).
+      run "${SUDO[@]}" dnf install -y nodejs
 
       # Fall back to NodeSource if the distribution shipped an old Node.js.
       if [ "$DRY_RUN" -eq 0 ]; then
         major="$(node_major_version)"
-        if [ -z "$major" ] || ! [ "$major" -ge 18 ] 2>/dev/null; then
+        if [ -z "$major" ] || ! [ "$major" -ge 18 ] 2>/dev/null ||
+          ! command -v npm >/dev/null 2>&1; then
           install_node_nodesource fedora
         fi
       fi
@@ -663,6 +672,32 @@ install_tmux_plugins() {
   fi
 }
 
+install_zsh_plugins() {
+  if [ "$SKIP_ZSH_PLUGINS" -eq 1 ]; then
+    log "Skipping zsh plugin installation (--skip-zsh-plugins)"
+    return
+  fi
+
+  if ! command -v git >/dev/null 2>&1; then
+    warn "git is required to install zsh plugins; skipping."
+    return
+  fi
+
+  run mkdir -p "$ZSH_PLUGIN_DIR"
+
+  local repo plugin
+  for repo in zsh-users/zsh-autosuggestions zsh-users/zsh-completions; do
+    plugin="$ZSH_PLUGIN_DIR/${repo#*/}"
+    if [ -d "$plugin/.git" ]; then
+      log "zsh plugin ${repo#*/} already installed"
+      continue
+    fi
+    log "Installing zsh plugin ${repo#*/}"
+    run git clone --depth 1 "https://github.com/${repo}.git" "$plugin" ||
+      warn "Could not clone ${repo}; zsh will run without it."
+  done
+}
+
 # ---------------------------------------------------------------------------
 # Neovim plugins and Mason packages
 # ---------------------------------------------------------------------------
@@ -827,6 +862,7 @@ link_dotfiles
 configure_login_shell
 install_fonts
 install_tmux_plugins
+install_zsh_plugins
 
 install_lazy_plugins
 install_mason_packages

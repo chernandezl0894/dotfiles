@@ -16,6 +16,15 @@ return {
       return icon
     end
 
+    -- Show the register being recorded; empty otherwise.
+    local function recording()
+      local register = vim.fn.reg_recording()
+      if register == '' then
+        return ''
+      end
+      return 'recording @' .. register
+    end
+
     lualine.setup({
       options = {
         icons_enabled = true,
@@ -37,9 +46,9 @@ return {
       },
       sections = {
         lualine_a = { 'mode' },
-        lualine_b = { },
-        lualine_c = { 'branch', file_icon, { 'filename', path = 1 } },
-        lualine_x = { 'diagnostics', 'filetype' },
+        lualine_b = { 'branch', 'diff' },
+        lualine_c = { file_icon, { 'filename', path = 1 } },
+        lualine_x = { 'searchcount', 'selectioncount', recording, 'diagnostics', 'lsp_status', 'filetype' },
         lualine_y = { 'progress' },
         lualine_z = { 'location' }
       },
